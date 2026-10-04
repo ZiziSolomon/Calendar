@@ -127,7 +127,9 @@ class MonthlyCalendarImpl(val callback: MonthlyCalendar, val context: Context) {
         }
 
     private fun gotEvents(events: ArrayList<Event>) {
-        mEvents = events
+        // month grids (month view, month+day view dots, monthly widget) show commitments only;
+        // a multi-day context would otherwise paint a bar or dot on every day it spans (§3.19)
+        mEvents = ArrayList(events.filterNot { it.isContextual })
         getDays(true)
     }
 }

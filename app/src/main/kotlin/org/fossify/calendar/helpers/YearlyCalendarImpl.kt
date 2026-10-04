@@ -16,7 +16,8 @@ class YearlyCalendarImpl(val callback: YearlyCalendar, val context: Context, val
         val startTS = startDateTime.seconds()
         val endTS = startDateTime.plusYears(1).minusSeconds(1).seconds()
         context.eventsHelper.getEvents(startTS, endTS) {
-            gotEvents(it)
+            // same reasoning as MonthlyCalendarImpl: don't mark every day an ambient context spans
+            gotEvents(it.filterNot { event -> event.isContextual }.toMutableList())
         }
     }
 
