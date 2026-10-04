@@ -18,6 +18,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.collection.LongSparseArray
 import androidx.fragment.app.Fragment
 import org.fossify.calendar.R
@@ -42,6 +43,7 @@ import org.fossify.calendar.extensions.seconds
 import org.fossify.calendar.extensions.shouldStrikeThrough
 import org.fossify.calendar.helpers.Config
 import org.fossify.calendar.helpers.ContextualStripeBuilder
+import org.fossify.calendar.helpers.ContextualStripeDescription
 import org.fossify.calendar.helpers.EDIT_ALL_OCCURRENCES
 import org.fossify.calendar.helpers.EDIT_FUTURE_OCCURRENCES
 import org.fossify.calendar.helpers.EDIT_SELECTED_OCCURRENCE
@@ -60,6 +62,7 @@ import org.fossify.calendar.helpers.getActivityToOpen
 import org.fossify.calendar.helpers.isWeekend
 import org.fossify.calendar.interfaces.WeekFragmentListener
 import org.fossify.calendar.interfaces.WeeklyCalendar
+import org.fossify.calendar.models.ContextualStripe
 import org.fossify.calendar.models.Event
 import org.fossify.calendar.models.EventWeeklyView
 import org.fossify.calendar.views.MyScrollView
@@ -86,6 +89,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isNougatPlus
 import org.fossify.commons.models.RadioItem
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
 import org.joda.time.Days
 import java.util.Calendar
 import kotlin.math.max
@@ -130,6 +134,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
     private var allDayRows = ArrayList<HashSet<Int>>()
     private var allDayEventToRow = LinkedHashMap<Event, Int>()
     private var currEvents = ArrayList<Event>()
+    private var contextualStripes = emptyList<ContextualStripe>()
     private var dayColumns = ArrayList<RelativeLayout>()
     private var calendarColors = LongSparseArray<Int>()
     private var eventTimeRanges = LinkedHashMap<String, LinkedHashMap<Long, EventWeeklyView>>()
@@ -312,6 +317,36 @@ class WeekFragment : Fragment(), WeeklyCalendar {
 
             binding.weekLettersHolder.addView(label)
             curDay = curDay.plusDays(1)
+        }
+        describeDayContexts()
+    }
+
+    // stripes are canvas drawing, invisible to TalkBack, so each day's header label speaks its
+    // contexts. The header rather than the day column: columns turn taps into new events, and
+    // making them focusable would let a TalkBack double-tap create one by accident
+    private fun describeDayContexts() {
+        val ctx = context ?: return
+        val templates = ContextualStripeDescription.Templates(
+            allDay = ctx.getString(R.string.contextual_a11y_all_day),
+            from = ctx.getString(R.string.contextual_a11y_from),
+            until = ctx.getString(R.string.contextual_a11y_until),
+            range = ctx.getString(R.string.contextual_a11y_range),
+            untitled = ctx.getString(R.string.contextual_a11y_untitled),
+        )
+        // stripe minutes are wall-clock, so format them on a zone-free base: a real day's
+        // midnight would shift (or throw) across a DST change
+        val clockBase = DateTime(2000, 1, 1, 0, 0, DateTimeZone.UTC)
+        for (i in 0 until binding.weekLettersHolder.childCount) {
+            val label = binding.weekLettersHolder.getChildAt(i) as? TextView ?: continue
+            val phrases = ContextualStripeDescription.describe(contextualStripes, i, templates) { minute ->
+                Formatter.getTime(ctx, clockBase.plusMinutes(minute))
+            }
+            label.contentDescription = if (phrases.isEmpty()) {
+                null
+            } else {
+                val day = label.text.toString().replace("\n", " ")
+                ctx.getString(R.string.contextual_a11y_day, day, phrases.joinToString("; "))
+            }
         }
     }
 
@@ -624,14 +659,14 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         // packing below, or they'd shove real events sideways (docs/CONTEXTUAL_EVENTS.md §3.11)
         // partitioned out even when hidden, so hiding them never brings back the clutter
         val (contextualEvents, events) = allEvents.partition { it.isContextual }
-        binding.weekContextualStripes.setStripes(
-            ContextualStripeBuilder.build(
-                events = if (config.showContextualEvents) contextualEvents else emptyList(),
-                firstDay = weekDateTime.toLocalDate(),
-                daysCount = config.weeklyViewDays,
-                fallbackColor = primaryColor
-            )
+        contextualStripes = ContextualStripeBuilder.build(
+            events = if (config.showContextualEvents) contextualEvents else emptyList(),
+            firstDay = weekDateTime.toLocalDate(),
+            daysCount = config.weeklyViewDays,
+            fallbackColor = primaryColor
         )
+        binding.weekContextualStripes.setStripes(contextualStripes)
+        describeDayContexts()
 
         allDayHolders.clear()
         allDayRows.clear()
