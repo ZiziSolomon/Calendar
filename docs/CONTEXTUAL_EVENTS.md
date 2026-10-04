@@ -305,3 +305,28 @@ home:
 
 **To resume:** hand this file to whichever agent has a compiler, starting at §1.
 It is self-contained — no conversation context required.
+
+---
+
+## 8. Since the build — what changed against this plan (Oct 2026)
+
+- **Wipe-and-resync, verified on the emulator.** `import_id` does survive (the §6
+  question), but two things didn't. (1) An *edited occurrence* is a child row that
+  points at its series only by local `parentId`, so it lost its mark until the
+  mark was re-keyed. (2) A synced *calendar* is deleted and recreated under a new
+  local id, so calendar-scoped rules matched nothing. Both are repaired at the end
+  of `CalDAVHelper.refreshCalendars()` by `ContextualRulesHelper.repairKeys()`
+  (pure logic in `ContextualRuleRepair`).
+- **DB v13:** `contextual_rules.caldav_calendar_id` (nullable) is the calendar's
+  repair key, mirroring `import_id` for events. It's filled when a rule is saved
+  and backfilled for v12 rules. `MIGRATION_12_13` is a single `ALTER TABLE … ADD
+  COLUMN`.
+- **Risky regexes are refused up front** (`RegexRisk`: nested quantifiers,
+  repeated alternation, backreferences), in both the editor and the evaluator.
+  `BoundedRunner` stays as the backstop (§1.4).
+- **Stripe labels** (setting, default on) stick to the top of the visible area
+  and stack when nested. **TalkBack:** each week-view day header speaks that
+  day's contexts.
+- **No `saveLayer` for stripes** (§3.12 still holds): each stripe is drawn
+  translucent, with the stripes above it clipped out. The full-height offscreen
+  layer doubled janky frames during week swipes.
