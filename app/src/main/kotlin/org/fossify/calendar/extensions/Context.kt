@@ -884,23 +884,7 @@ fun Context.getEventListItems(
             prevCode = code
         }
 
-        val listEvent =
-            ListEvent(
-                it.id!!,
-                it.startTS,
-                it.endTS,
-                it.title,
-                it.description,
-                it.getIsAllDay(),
-                it.color,
-                it.location,
-                it.isPastEvent,
-                it.repeatInterval > 0,
-                it.isTask(),
-                it.isTaskCompleted(),
-                it.isAttendeeInviteDeclined(),
-                it.isEventCanceled()
-            )
+        val listEvent = ListEvent.from(it)
         listItems.add(listEvent)
     }
     return listItems

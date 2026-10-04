@@ -32,6 +32,7 @@ class EventListAdapter(
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
 
     private val allDayString = resources.getString(R.string.all_day)
+    private val contextTag = resources.getString(R.string.contextual_list_tag)
     private val displayDescription = activity.config.displayDescription
     private val replaceDescription = activity.config.replaceDescription
     private val dimPastEvents = activity.config.dimPastEvents
@@ -160,6 +161,8 @@ class EventListAdapter(
                     eventItemTime.text = "${eventItemTime.text} (${Formatter.getDateDayTitle(endCode)})"
                 }
             }
+
+            eventItemTime.text = listEvent.tagTime(eventItemTime.text.toString(), contextTag)
 
             eventItemDescription.text = if (replaceDescription) listEvent.location else listEvent.description.replace("\n", " ")
             eventItemDescription.beVisibleIf(displayDescription && eventItemDescription.text.isNotEmpty())

@@ -14,10 +14,36 @@ data class ListEvent(
     var isTask: Boolean,
     var isTaskCompleted: Boolean,
     var isAttendeeInviteDeclined: Boolean,
-    var isEventCanceled: Boolean
+    var isEventCanceled: Boolean,
+    var isContextual: Boolean = false
 ) : ListItem() {
 
+    /**
+     * Lists show contexts and commitments side by side, so a contextual row says so in words.
+     * Colour and alpha are taken: upstream uses them for calendars, past events and done tasks.
+     */
+    fun tagTime(time: String, contextTag: String) = if (isContextual) "$time · $contextTag" else time
+
     companion object {
+        fun from(event: Event) = ListEvent(
+            id = event.id!!,
+            startTS = event.startTS,
+            endTS = event.endTS,
+            title = event.title,
+            description = event.description,
+            isAllDay = event.getIsAllDay(),
+            color = event.color,
+            location = event.location,
+            isPastEvent = event.isPastEvent,
+            isRepeatable = event.repeatInterval > 0,
+            isTask = event.isTask(),
+            isTaskCompleted = event.isTaskCompleted(),
+            isAttendeeInviteDeclined = event.isAttendeeInviteDeclined(),
+            isEventCanceled = event.isEventCanceled(),
+            // set by EventsHelper.getEventsSync(), which every list path goes through
+            isContextual = event.isContextual
+        )
+
         val empty = ListEvent(
             id = 0,
             startTS = 0,
