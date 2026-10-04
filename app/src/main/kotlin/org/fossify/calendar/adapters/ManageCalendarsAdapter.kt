@@ -1,5 +1,6 @@
 package org.fossify.calendar.adapters
 
+import android.content.Intent
 import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.Menu
@@ -7,9 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
 import org.fossify.calendar.R
+import org.fossify.calendar.activities.ManageContextualRulesActivity
 import org.fossify.calendar.activities.SimpleActivity
 import org.fossify.calendar.databinding.ItemCalendarBinding
 import org.fossify.calendar.extensions.eventsHelper
+import org.fossify.calendar.helpers.CALENDAR_ID
 import org.fossify.calendar.helpers.LOCAL_CALENDAR_ID
 import org.fossify.calendar.interfaces.DeleteCalendarsListener
 import org.fossify.calendar.models.CalendarEntity
@@ -43,6 +46,7 @@ class ManageCalendarsAdapter(
     override fun prepareActionMode(menu: Menu) {
         menu.apply {
             findItem(R.id.cab_edit).isVisible = isOneItemSelected()
+            findItem(R.id.cab_contextual_rules).isVisible = isOneItemSelected()
         }
     }
 
@@ -54,6 +58,7 @@ class ManageCalendarsAdapter(
         when (id) {
             R.id.cab_edit -> editCalendar()
             R.id.cab_delete -> askConfirmDelete()
+            R.id.cab_contextual_rules -> openContextualRules(getSelectedItems().first())
         }
     }
 
@@ -130,6 +135,8 @@ class ManageCalendarsAdapter(
                             askConfirmDelete()
                         }
                     }
+
+                    R.id.cab_contextual_rules -> openContextualRules(calendar)
                 }
                 true
             }
@@ -141,6 +148,14 @@ class ManageCalendarsAdapter(
         selectedKeys.clear()
         selectedKeys.add(calendarId)
         callback()
+    }
+
+    private fun openContextualRules(calendar: CalendarEntity) {
+        finishActMode()
+        Intent(activity, ManageContextualRulesActivity::class.java).apply {
+            putExtra(CALENDAR_ID, calendar.id!!)
+            activity.startActivity(this)
+        }
     }
 
     private fun editCalendar() {

@@ -322,6 +322,33 @@
     <string name="faq_5_text">Check your device battery and notification settings, if there is nothing blocking the reminders, or killing the app in the background. You might also want to take a look at &lt;a href=https://dontkillmyapp.com&gt;https://dontkillmyapp.com&lt;/a&gt;, it has some useful tips.</string>
     <string name="faq_6_title">How can I modify or delete an existing calendar?</string>
     <string name="faq_6_text">You can do both of those in the app Settings - Manage calendars. Just click on the wanted one for changing the label and color, or select the wanted one by long pressing it and use the trashbin at the top menu for deleting.</string>
+    <!-- Contextual events (fork addition) -->
+    <string name="contextual_rules">Contextual events</string>
+    <string name="contextual_rules_empty">No rules yet. Events matching any enabled rule are shown as background context instead of appointments.</string>
+    <string name="add_contextual_rule">Add rule</string>
+    <string name="edit_contextual_rule">Edit rule</string>
+    <string name="contextual_rule_type">Match</string>
+    <string name="contextual_match_all">Every event in a calendar</string>
+    <string name="contextual_match_title_contains">Title contains</string>
+    <string name="contextual_match_title_regex">Title matches pattern (regex)</string>
+    <string name="contextual_match_duration_over">Longer than</string>
+    <string name="contextual_match_event">A single event</string>
+    <string name="contextual_rule_all_events">All events</string>
+    <string name="contextual_rule_title_contains">Title contains “%s”</string>
+    <string name="contextual_rule_title_regex">Title matches /%s/</string>
+    <string name="contextual_rule_duration_over">Longer than %s</string>
+    <string name="contextual_rule_event">Event: %s</string>
+    <string name="contextual_rule_event_missing">Event (no longer exists)</string>
+    <string name="contextual_rule_all_calendars">All calendars</string>
+    <string name="contextual_rule_calendar">Calendar</string>
+    <string name="contextual_rule_text_hint">Text in the title</string>
+    <string name="contextual_rule_regex_hint">Regular expression</string>
+    <string name="contextual_rule_hours_hint">Hours (24 = one day)</string>
+    <string name="contextual_rule_needs_text">Enter some text to match</string>
+    <string name="contextual_rule_needs_hours">Enter a number of hours</string>
+    <string name="contextual_rule_needs_calendar">Pick a calendar. Without one, every event would become contextual.</string>
+    <string name="contextual_rule_bad_regex">Invalid pattern: %s</string>
+
     <!--
         Haven't found some strings? There's more at
         https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res

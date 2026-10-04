@@ -183,6 +183,7 @@ class SettingsActivity : SimpleActivity() {
         setupUseEnglish()
         setupLanguage()
         setupManageCalendars()
+        setupManageContextualRules()
         setupManageQuickFilterCalendars()
         setupHourFormat()
         setupAllowCreatingTasks()
@@ -329,6 +330,12 @@ class SettingsActivity : SimpleActivity() {
     private fun setupManageCalendars() {
         binding.settingsManageCalendarsHolder.setOnClickListener {
             startActivity(Intent(this, ManageCalendarsActivity::class.java))
+        }
+    }
+
+    private fun setupManageContextualRules() {
+        binding.settingsManageContextualRulesHolder.setOnClickListener {
+            startActivity(Intent(this, ManageContextualRulesActivity::class.java))
         }
     }
 

@@ -213,6 +213,13 @@
             android:parentActivityName=".activities.SettingsActivity" />
 
         <activity
+            android:name=".activities.ManageContextualRulesActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/contextual_rules"
+            android:parentActivityName=".activities.SettingsActivity" />
+
+        <activity
             android:name=".activities.SnoozeReminderActivity"
             android:configChanges="orientation"
             android:excludeFromRecents="true"

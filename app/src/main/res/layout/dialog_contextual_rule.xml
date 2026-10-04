@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/contextual_rule_scrollview"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/contextual_rule_holder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/activity_margin"
+        android:paddingTop="@dimen/activity_margin"
+        android:paddingEnd="@dimen/activity_margin">
+
+        <org.fossify.commons.views.MyTextInputLayout
+            android:id="@+id/contextual_rule_type_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/activity_margin"
+            android:hint="@string/contextual_rule_type">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contextual_rule_type"
+                style="@style/UnclickableEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </org.fossify.commons.views.MyTextInputLayout>
+
+        <org.fossify.commons.views.MyTextInputLayout
+            android:id="@+id/contextual_rule_pattern_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/activity_margin">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contextual_rule_pattern"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:singleLine="true"
+                android:textCursorDrawable="@null" />
+
+        </org.fossify.commons.views.MyTextInputLayout>
+
+        <org.fossify.commons.views.MyTextInputLayout
+            android:id="@+id/contextual_rule_calendar_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/activity_margin"
+            android:hint="@string/contextual_rule_calendar">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contextual_rule_calendar"
+                style="@style/UnclickableEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </org.fossify.commons.views.MyTextInputLayout>
+
+    </LinearLayout>
+</ScrollView>
