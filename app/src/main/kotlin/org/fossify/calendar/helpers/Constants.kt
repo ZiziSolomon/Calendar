@@ -113,6 +113,8 @@ const val LOOP_REMINDERS = "loop_reminders"
 const val DIM_PAST_EVENTS = "dim_past_events"
 const val SHOW_CONTEXTUAL_EVENTS = "show_contextual_events"
 const val LABEL_CONTEXTUAL_STRIPES = "label_contextual_stripes"
+// settings export only: the rules themselves live in the DB, not in prefs
+const val CONTEXTUAL_RULES = "contextual_rules"
 const val DIM_COMPLETED_TASKS = "dim_completed_tasks"
 const val LAST_SOUND_URI = "last_sound_uri"
 const val LAST_REMINDER_CHANNEL_ID = "last_reminder_channel_ID"

@@ -103,6 +103,31 @@ class ContextualRulesHelper(val context: Context) {
         }
     }
 
+    /** The rules as one settings-export line (see ContextualRulesBackup). Call from a background thread. */
+    fun exportForSettings(): String {
+        return ContextualRulesBackup.encode(dao.getRules()) { context.calendarsDB.getCalendarWithId(it)?.title }
+    }
+
+    /**
+     * Merges rules from a settings import into this install. Returns how many couldn't be bound
+     * to a calendar or event here. Call from a background thread.
+     */
+    fun importFromSettings(json: String): Int {
+        val plan = ContextualRulesBackup.planImport(
+            entries = ContextualRulesBackup.decode(json),
+            existing = dao.getRules(),
+            calendarIdForCaldavId = { context.calendarsDB.getCalendarWithCalDAVCalendarId(it)?.id },
+            calendarIdForName = { context.calendarsDB.getCalendarIdWithTitle(it) },
+            eventIdForImportId = { context.eventsDB.getEventIdWithImportId(it) },
+        )
+
+        plan.toInsert.forEach { dao.insertOrUpdate(withCalendarKey(it)) }
+        if (plan.toInsert.isNotEmpty()) {
+            rulesChanged()
+        }
+        return plan.skipped
+    }
+
     // a rule scoped to a synced calendar carries that calendar's CalDAV id, so a later
     // wipe-and-resync (new local calendar id) can be repaired
     private fun withCalendarKey(rule: ContextualRule): ContextualRule {

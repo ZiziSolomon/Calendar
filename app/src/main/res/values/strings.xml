@@ -373,6 +373,10 @@
     <string name="contextual_a11y_until">%1$s, until %2$s</string>
     <string name="contextual_a11y_range">%1$s, %2$s to %3$s</string>
     <string name="contextual_a11y_untitled">Untitled context</string>
+    <plurals name="contextual_rules_import_skipped">
+        <item quantity="one">%d contextual rule could not be matched to a calendar or event here and was skipped. Turn on CalDAV sync first, then import again.</item>
+        <item quantity="other">%d contextual rules could not be matched to a calendar or event here and were skipped. Turn on CalDAV sync first, then import again.</item>
+    </plurals>
 
     <!--
         Haven't found some strings? There's more at

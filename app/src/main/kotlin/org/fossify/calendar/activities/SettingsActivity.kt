@@ -27,6 +27,10 @@ import org.fossify.calendar.extensions.showImportEventsDialog
 import org.fossify.calendar.extensions.tryImportEventsFromFile
 import org.fossify.calendar.extensions.updateWidgets
 import org.fossify.calendar.helpers.ALLOW_CHANGING_TIME_ZONES
+import org.fossify.calendar.helpers.CONTEXTUAL_RULES
+import org.fossify.calendar.helpers.ContextualRulesHelper
+import org.fossify.calendar.helpers.LABEL_CONTEXTUAL_STRIPES
+import org.fossify.calendar.helpers.SHOW_CONTEXTUAL_EVENTS
 import org.fossify.calendar.helpers.ALLOW_CREATING_TASKS
 import org.fossify.calendar.helpers.ALLOW_CUSTOMIZE_DAY_COUNT
 import org.fossify.calendar.helpers.DAILY_VIEW
@@ -1182,9 +1186,15 @@ class SettingsActivity : SimpleActivity() {
                 put(HIGHLIGHT_WEEKENDS, config.highlightWeekends)
                 put(HIGHLIGHT_WEEKENDS_COLOR, config.highlightWeekendsColor)
                 put(ALLOW_CREATING_TASKS, config.allowCreatingTasks)
+                put(SHOW_CONTEXTUAL_EVENTS, config.showContextualEvents)
+                put(LABEL_CONTEXTUAL_STRIPES, config.labelContextualStripes)
             }
 
-            exportSettings(configItems)
+            // the rules are in the DB, so they're read off the UI thread
+            ensureBackgroundThread {
+                configItems[CONTEXTUAL_RULES] = ContextualRulesHelper(this).exportForSettings()
+                runOnUiThread { exportSettings(configItems) }
+            }
         }
     }
 
@@ -1298,6 +1308,20 @@ class SettingsActivity : SimpleActivity() {
                 HIGHLIGHT_WEEKENDS -> config.highlightWeekends = value.toBoolean()
                 HIGHLIGHT_WEEKENDS_COLOR -> config.highlightWeekendsColor = value.toInt()
                 ALLOW_CREATING_TASKS -> config.allowCreatingTasks = value.toBoolean()
+                SHOW_CONTEXTUAL_EVENTS -> config.showContextualEvents = value.toBoolean()
+                LABEL_CONTEXTUAL_STRIPES -> config.labelContextualStripes = value.toBoolean()
+            }
+        }
+
+        // parseFile can run on the UI thread (the Q+ picker path), and this touches the DB
+        (configValues[CONTEXTUAL_RULES] as? String)?.let { rulesJson ->
+            ensureBackgroundThread {
+                val skipped = ContextualRulesHelper(this).importFromSettings(rulesJson)
+                if (skipped > 0) {
+                    runOnUiThread {
+                        toast(resources.getQuantityString(R.plurals.contextual_rules_import_skipped, skipped, skipped), Toast.LENGTH_LONG)
+                    }
+                }
             }
         }
 
