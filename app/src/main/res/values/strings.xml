@@ -362,6 +362,7 @@
     <string name="contextual_preview_sample">%1$s · %2$s</string>
     <string name="show_contextual_events">Show contextual events in day and week views</string>
     <string name="label_contextual_stripes">Label contextual events in week view</string>
+    <string name="mute_contextual_reminders">Mute reminders for contextual events</string>
     <string name="mark_as_contextual">Mark as contextual</string>
     <string name="unmark_contextual">Unmark as contextual</string>
     <string name="marked_contextual">Marked as contextual. It will show as background context.</string>

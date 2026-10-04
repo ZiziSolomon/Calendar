@@ -39,6 +39,8 @@ import org.fossify.calendar.helpers.ACTION_MARK_COMPLETED
 import org.fossify.calendar.helpers.AUTOMATIC_BACKUP_REQUEST_CODE
 import org.fossify.calendar.helpers.CalDAVHelper
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualReminderPolicy
+import org.fossify.calendar.helpers.ContextualRulesCache
 import org.fossify.calendar.helpers.DAY
 import org.fossify.calendar.helpers.DEFAULT_START_TIME_CURRENT_TIME
 import org.fossify.calendar.helpers.DEFAULT_START_TIME_NEXT_FULL_HOUR
@@ -435,6 +437,7 @@ fun Context.notifyRunningEvents() {
     eventsHelper.getRunningEventsOrTasks()
         .filter { !it.isAttendeeInviteDeclined() }
         .filter { it.getReminders().any { reminder -> reminder.type == REMINDER_NOTIFICATION } }
+        .filter { ContextualReminderPolicy.shouldNotify(it, config.muteContextualReminders) { ContextualRulesCache.getEvaluator(this) } }
         .forEach {
             notifyEvent(it)
         }

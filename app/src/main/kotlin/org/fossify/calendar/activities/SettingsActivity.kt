@@ -30,6 +30,7 @@ import org.fossify.calendar.helpers.ALLOW_CHANGING_TIME_ZONES
 import org.fossify.calendar.helpers.CONTEXTUAL_RULES
 import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.LABEL_CONTEXTUAL_STRIPES
+import org.fossify.calendar.helpers.MUTE_CONTEXTUAL_REMINDERS
 import org.fossify.calendar.helpers.SHOW_CONTEXTUAL_EVENTS
 import org.fossify.calendar.helpers.ALLOW_CREATING_TASKS
 import org.fossify.calendar.helpers.ALLOW_CUSTOMIZE_DAY_COUNT
@@ -226,6 +227,7 @@ class SettingsActivity : SimpleActivity() {
         setupDimEvents()
         setupShowContextualEvents()
         setupLabelContextualStripes()
+        setupMuteContextualReminders()
         setupDimCompletedTasks()
         setupAllowChangingTimeZones()
         updateTextColors(binding.settingsHolder)
@@ -915,6 +917,14 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupMuteContextualReminders() = binding.apply {
+        settingsMuteContextualReminders.isChecked = config.muteContextualReminders
+        settingsMuteContextualRemindersHolder.setOnClickListener {
+            settingsMuteContextualReminders.toggle()
+            config.muteContextualReminders = settingsMuteContextualReminders.isChecked
+        }
+    }
+
     private fun setupLabelContextualStripes() = binding.apply {
         settingsLabelContextualStripes.isChecked = config.labelContextualStripes
         settingsLabelContextualStripesHolder.setOnClickListener {
@@ -1188,6 +1198,7 @@ class SettingsActivity : SimpleActivity() {
                 put(ALLOW_CREATING_TASKS, config.allowCreatingTasks)
                 put(SHOW_CONTEXTUAL_EVENTS, config.showContextualEvents)
                 put(LABEL_CONTEXTUAL_STRIPES, config.labelContextualStripes)
+                put(MUTE_CONTEXTUAL_REMINDERS, config.muteContextualReminders)
             }
 
             // the rules are in the DB, so they're read off the UI thread
@@ -1310,6 +1321,7 @@ class SettingsActivity : SimpleActivity() {
                 ALLOW_CREATING_TASKS -> config.allowCreatingTasks = value.toBoolean()
                 SHOW_CONTEXTUAL_EVENTS -> config.showContextualEvents = value.toBoolean()
                 LABEL_CONTEXTUAL_STRIPES -> config.labelContextualStripes = value.toBoolean()
+                MUTE_CONTEXTUAL_REMINDERS -> config.muteContextualReminders = value.toBoolean()
             }
         }
 

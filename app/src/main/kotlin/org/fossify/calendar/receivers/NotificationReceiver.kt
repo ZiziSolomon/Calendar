@@ -4,10 +4,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
+import org.fossify.calendar.extensions.config
 import org.fossify.calendar.extensions.eventsDB
 import org.fossify.calendar.extensions.notifyEvent
 import org.fossify.calendar.extensions.scheduleNextEventReminder
 import org.fossify.calendar.extensions.updateListWidget
+import org.fossify.calendar.helpers.ContextualReminderPolicy
+import org.fossify.calendar.helpers.ContextualRulesCache
 import org.fossify.calendar.helpers.EVENT_ID
 import org.fossify.calendar.helpers.Formatter
 import org.fossify.calendar.helpers.REMINDER_NOTIFICATION
@@ -41,9 +44,15 @@ class NotificationReceiver : BroadcastReceiver() {
                 return
             }
 
-            if (!event.repetitionExceptions.contains(Formatter.getDayCodeFromTS(event.startTS))) {
+            if (
+                !event.repetitionExceptions.contains(Formatter.getDayCodeFromTS(event.startTS))
+                && ContextualReminderPolicy.shouldNotify(event, context.config.muteContextualReminders) {
+                    ContextualRulesCache.getEvaluator(context)
+                }
+            ) {
                 context.notifyEvent(event)
             }
+            // scheduled even when muted, so turning muting off works from the next reminder
             context.scheduleNextEventReminder(event, false)
         }
     }

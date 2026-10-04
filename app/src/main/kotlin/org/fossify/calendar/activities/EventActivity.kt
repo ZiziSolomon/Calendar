@@ -61,6 +61,8 @@ import org.fossify.calendar.helpers.CALDAV
 import org.fossify.calendar.helpers.CALENDAR_ID
 import org.fossify.calendar.helpers.CLASS
 import org.fossify.calendar.helpers.CURRENT_TIME_ZONE
+import org.fossify.calendar.helpers.ContextualReminderPolicy
+import org.fossify.calendar.helpers.ContextualRulesCache
 import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.DELETE_ALL_OCCURRENCES
 import org.fossify.calendar.helpers.DELETE_FUTURE_OCCURRENCES
@@ -1778,6 +1780,9 @@ class EventActivity : SimpleActivity() {
                     if (
                         mEvent.repeatInterval == 0 && mEvent.getReminders()
                             .any { it.type == REMINDER_NOTIFICATION }
+                        && ContextualReminderPolicy.shouldNotify(mEvent, config.muteContextualReminders) {
+                            ContextualRulesCache.getEvaluator(this)
+                        }
                     ) {
                         notifyEvent(mEvent)
                     }

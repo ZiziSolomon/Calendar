@@ -177,6 +177,11 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(LABEL_CONTEXTUAL_STRIPES, true)
         set(labelContextualStripes) = prefs.edit().putBoolean(LABEL_CONTEXTUAL_STRIPES, labelContextualStripes).apply()
 
+    // off by default: muting is opt-in, so no reminder disappears just because a rule matched
+    var muteContextualReminders: Boolean
+        get() = prefs.getBoolean(MUTE_CONTEXTUAL_REMINDERS, false)
+        set(muteContextualReminders) = prefs.edit().putBoolean(MUTE_CONTEXTUAL_REMINDERS, muteContextualReminders).apply()
+
     var dimCompletedTasks: Boolean
         get() = prefs.getBoolean(DIM_COMPLETED_TASKS, true)
         set(dimCompletedTasks) = prefs.edit().putBoolean(DIM_COMPLETED_TASKS, dimCompletedTasks)

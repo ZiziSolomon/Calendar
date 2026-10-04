@@ -912,6 +912,21 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_mute_contextual_reminders_holder"
+                style="@style/SettingsHolderSwitchStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyMaterialSwitch
+                    android:id="@+id/settings_mute_contextual_reminders"
+                    style="@style/SettingsSwitchStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mute_contextual_reminders" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_allow_changing_time_zones_holder"
                 style="@style/SettingsHolderSwitchStyle"
                 android:layout_width="match_parent"
