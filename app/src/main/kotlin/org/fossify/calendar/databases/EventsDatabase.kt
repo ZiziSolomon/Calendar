@@ -12,10 +12,12 @@ import org.fossify.calendar.extensions.config
 import org.fossify.calendar.helpers.Converters
 import org.fossify.calendar.helpers.LOCAL_CALENDAR_ID
 import org.fossify.calendar.interfaces.CalendarsDao
+import org.fossify.calendar.interfaces.ContextualRulesDao
 import org.fossify.calendar.interfaces.EventsDao
 import org.fossify.calendar.interfaces.TasksDao
 import org.fossify.calendar.interfaces.WidgetsDao
 import org.fossify.calendar.models.CalendarEntity
+import org.fossify.calendar.models.ContextualRule
 import org.fossify.calendar.models.Event
 import org.fossify.calendar.models.Task
 import org.fossify.calendar.models.Widget
@@ -23,8 +25,8 @@ import org.fossify.commons.extensions.getProperPrimaryColor
 import java.util.concurrent.Executors
 
 @Database(
-    entities = [Event::class, CalendarEntity::class, Widget::class, Task::class],
-    version = 11
+    entities = [Event::class, CalendarEntity::class, Widget::class, Task::class, ContextualRule::class],
+    version = 12
 )
 @TypeConverters(Converters::class)
 abstract class EventsDatabase : RoomDatabase() {
@@ -36,6 +38,8 @@ abstract class EventsDatabase : RoomDatabase() {
     abstract fun WidgetsDao(): WidgetsDao
 
     abstract fun TasksDao(): TasksDao
+
+    abstract fun ContextualRulesDao(): ContextualRulesDao
 
     companion object {
         private var db: EventsDatabase? = null
@@ -65,6 +69,7 @@ abstract class EventsDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_8_9)
                             .addMigrations(MIGRATION_9_10)
                             .addMigrations(MIGRATION_10_11)
+                            .addMigrations(MIGRATION_11_12)
                             .build()
                         db!!.openHelper.setWriteAheadLoggingEnabled(true)
                     }
@@ -179,6 +184,19 @@ abstract class EventsDatabase : RoomDatabase() {
                 database.apply {
                     execSQL("ALTER TABLE widgets ADD COLUMN header INTEGER NOT NULL DEFAULT 1")
                     execSQL("ALTER TABLE events ADD COLUMN access_level INTEGER NOT NULL DEFAULT 0")
+                }
+            }
+        }
+
+        // Copied verbatim from schemas/.../12.json. Room rejects the DB at runtime if a migration's
+        // table differs from the entity, so EventsDatabaseMigrationTest checks the two still match.
+        internal const val CREATE_CONTEXTUAL_RULES_SQL =
+            "CREATE TABLE IF NOT EXISTS `contextual_rules` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `calendar_id` INTEGER, `match_type` INTEGER NOT NULL, `pattern` TEXT NOT NULL, `event_id` INTEGER, `import_id` TEXT, `enabled` INTEGER NOT NULL)"
+
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.apply {
+                    execSQL(CREATE_CONTEXTUAL_RULES_SQL)
                 }
             }
         }
