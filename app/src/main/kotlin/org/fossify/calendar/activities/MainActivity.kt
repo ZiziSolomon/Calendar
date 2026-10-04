@@ -337,6 +337,11 @@ class MainActivity : SimpleActivity(), RefreshRecyclerViewListener {
                 shouldGoToTodayBeVisible && !binding.mainMenu.isSearchOpen
             findItem(R.id.go_to_date).isVisible = config.storedView != EVENTS_LIST_VIEW
             findItem(R.id.refresh_caldav_calendars).isVisible = config.caldavSync
+            // the setting only affects week and day views, so elsewhere the toggle would do nothing
+            findItem(R.id.toggle_contextual).apply {
+                isVisible = config.storedView == WEEKLY_VIEW || config.storedView == DAILY_VIEW
+                isChecked = config.showContextualEvents
+            }
             findItem(R.id.more_apps_from_us).isVisible =
                 !resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)
         }
@@ -361,6 +366,7 @@ class MainActivity : SimpleActivity(), RefreshRecyclerViewListener {
                 R.id.go_to_today -> goToToday()
                 R.id.go_to_date -> showGoToDateDialog()
                 R.id.print -> printView()
+                R.id.toggle_contextual -> toggleContextualEvents()
                 R.id.filter -> showFilterDialog()
                 R.id.refresh_caldav_calendars -> refreshCalDAVCalendars(true)
                 R.id.add_holidays -> addHolidays()
@@ -1322,6 +1328,15 @@ class MainActivity : SimpleActivity(), RefreshRecyclerViewListener {
                 getCurrentFragment()?.refreshEvents()
             }
         }
+    }
+
+    private fun toggleContextualEvents() {
+        config.showContextualEvents = !config.showContextualEvents
+        // so onResume doesn't rebuild the views (and jump to today) for a change already applied
+        mStoredShowContextualEvents = config.showContextualEvents
+        refreshMenuItems()
+        // refresh in place, keeping the shown week or day; ContextualRenderKey makes it redraw
+        refreshViewPager()
     }
 
     private fun launchSettings() {

@@ -93,8 +93,12 @@ class DayFragment : Fragment() {
     }
 
     private fun receivedEvents(events: List<Event>) {
-        val newHash = events.hashCode()
-        if (newHash == lastHash || !isAdded) {
+        if (!isAdded) {
+            return
+        }
+
+        val newHash = ContextualRenderKey.of(events, requireContext().config.showContextualEvents)
+        if (newHash == lastHash) {
             return
         }
         lastHash = newHash

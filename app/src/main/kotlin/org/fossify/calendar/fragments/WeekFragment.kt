@@ -42,6 +42,7 @@ import org.fossify.calendar.extensions.intersects
 import org.fossify.calendar.extensions.seconds
 import org.fossify.calendar.extensions.shouldStrikeThrough
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualRenderKey
 import org.fossify.calendar.helpers.ContextualStripeBuilder
 import org.fossify.calendar.helpers.ContextualStripeDescription
 import org.fossify.calendar.helpers.EDIT_ALL_OCCURRENCES
@@ -635,8 +636,12 @@ class WeekFragment : Fragment(), WeeklyCalendar {
     }
 
     override fun updateWeeklyCalendar(events: ArrayList<Event>) {
-        val newHash = events.hashCode()
-        if (newHash == lastHash || mWasDestroyed || context == null) {
+        if (mWasDestroyed || context == null) {
+            return
+        }
+
+        val newHash = ContextualRenderKey.of(events, requireContext().config.showContextualEvents)
+        if (newHash == lastHash) {
             return
         }
 

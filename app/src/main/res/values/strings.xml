@@ -361,6 +361,7 @@
     <string name="contextual_preview_too_slow">This pattern is too slow on your events. Try a simpler one.</string>
     <string name="contextual_preview_sample">%1$s · %2$s</string>
     <string name="show_contextual_events">Show contextual events in day and week views</string>
+    <string name="show_contextual_events_short">Show contextual events</string>
     <string name="label_contextual_stripes">Label contextual events in week view</string>
     <string name="mute_contextual_reminders">Mute reminders for contextual events</string>
     <plurals name="contextual_rule_usage">
