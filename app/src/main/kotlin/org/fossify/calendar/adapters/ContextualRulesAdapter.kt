@@ -17,12 +17,13 @@ class ContextualRulesAdapter(
     val rows: ArrayList<Row>,
     recyclerView: MyRecyclerView,
     val onRulesDeleted: () -> Unit,
-    val onShowMatches: (ContextualRule) -> Unit,
+    val onShowMatches: (Row) -> Unit,
     itemClick: (Any) -> Unit
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
 
     /** Display text is resolved up front on a background thread (it can need an event lookup). */
-    data class Row(val rule: ContextualRule, val title: String, val subtitle: String)
+    // scope is the calendar name (or "All calendars"), kept apart so the matches dialog can reuse it
+    data class Row(val rule: ContextualRule, val title: String, val scope: String, val subtitle: String)
 
     init {
         setupDragListener(true)
@@ -42,7 +43,7 @@ class ContextualRulesAdapter(
         when (id) {
             R.id.cab_delete -> ConfirmationDialog(activity) { deleteSelected() }
             R.id.cab_show_matches -> rows.firstOrNull { selectedKeys.contains(it.rule.id?.toInt()) }?.let {
-                onShowMatches(it.rule)
+                onShowMatches(it)
                 finishActMode()
             }
         }

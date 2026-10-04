@@ -87,7 +87,7 @@ class ManageContextualRulesActivity : SimpleActivity() {
             val usage = ContextualRuleUsage.count(rules, getUsageWindowEvents())
             val rows = rules.mapIndexed { index, rule ->
                 val scope = rule.calendarId?.let { calendarTitles[it] } ?: allCalendars
-                ContextualRulesAdapter.Row(rule, helper.describe(rule), "$scope · ${describeUsage(usage[index])}")
+                ContextualRulesAdapter.Row(rule, helper.describe(rule), scope, "$scope · ${describeUsage(usage[index])}")
             }
 
             val toolbarSubtitle = calendarId?.let { calendarTitles[it] }
@@ -107,10 +107,11 @@ class ManageContextualRulesActivity : SimpleActivity() {
         return events
     }
 
-    private fun showMatches(rule: ContextualRule) {
+    private fun showMatches(row: ContextualRulesAdapter.Row) {
         ensureBackgroundThread {
-            val matches = ContextualRuleUsage.matches(rule, getUsageWindowEvents(), getNowSeconds())
-            val title = helper.describe(rule)
+            val matches = ContextualRuleUsage.matches(row.rule, getUsageWindowEvents(), getNowSeconds())
+            // same wording as the rule's row, so "All events" says which calendar it means
+            val title = "${row.title} · ${row.scope}"
             runOnUiThread {
                 if (!isDestroyed && !isFinishing) {
                     showMatchesDialog(title, matches)
