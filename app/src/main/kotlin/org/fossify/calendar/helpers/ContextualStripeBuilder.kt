@@ -45,7 +45,7 @@ object ContextualStripeBuilder {
             while (!day.isAfter(until)) {
                 val dayIndex = Days.daysBetween(firstDay, day).days
                 slice(event, start, end, day, startDay, endDay)?.let { (startMinute, endMinute) ->
-                    stripes.add(ContextualStripe(dayIndex, startMinute, endMinute, color, event.title))
+                    stripes.add(ContextualStripe(dayIndex, startMinute, endMinute, color, event.title, event.id ?: 0L, event.startTS, event.isTask()))
                 }
                 day = day.plusDays(1)
             }

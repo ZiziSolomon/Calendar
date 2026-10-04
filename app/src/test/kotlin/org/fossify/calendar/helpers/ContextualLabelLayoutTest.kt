@@ -73,4 +73,38 @@ class ContextualLabelLayoutTest {
     fun labelNeverRunsPastTheBottomOfTheScreen() {
         assertNull(place(item(0, 1390f, 1600f), visibleBottom = 1400f).single())
     }
+
+    // hit-testing: labels are 30px lines here; a 48px minimum target pads each by 9px above and below
+    private val minTouch = 48f
+    private fun label(left: Float, top: Float) = Bounds(left, top, left + 100f, top + line)
+
+    @Test
+    fun tapOnALabelHitsIt() {
+        assertEquals(0, ContextualLabelLayout.hitTest(listOf(label(0f, 500f)), 50f, 515f, minTouch))
+    }
+
+    @Test
+    fun targetIsPaddedToAFingerButNoFurther() {
+        val labels = listOf(label(0f, 500f))
+        assertEquals(0, ContextualLabelLayout.hitTest(labels, 50f, 492f, minTouch))
+        assertEquals(0, ContextualLabelLayout.hitTest(labels, 50f, 538f, minTouch))
+        // below the padded label is plain stripe: the grid's tap-to-create applies there
+        assertNull(ContextualLabelLayout.hitTest(labels, 50f, 540f, minTouch))
+        assertNull(ContextualLabelLayout.hitTest(labels, 50f, 490f, minTouch))
+    }
+
+    @Test
+    fun otherColumnsAndUndrawnLabelsAreNotHit() {
+        val labels = listOf(null, label(100f, 500f))
+        assertNull(ContextualLabelLayout.hitTest(labels, 50f, 515f, minTouch))
+        assertEquals(1, ContextualLabelLayout.hitTest(labels, 150f, 515f, minTouch))
+    }
+
+    @Test
+    fun stackedLabelsGoToTheNearestLine() {
+        // nested context: second label stacked straight under the first, padded areas overlap
+        val labels = listOf(label(0f, 500f), label(0f, 530f))
+        assertEquals(0, ContextualLabelLayout.hitTest(labels, 50f, 520f, minTouch))
+        assertEquals(1, ContextualLabelLayout.hitTest(labels, 50f, 535f, minTouch))
+    }
 }

@@ -496,6 +496,14 @@ class WeekFragment : Fragment(), WeeklyCalendar {
                 selectedGrid?.animation?.cancel()
                 selectedGrid?.beGone()
 
+                // a tap on a contextual stripe's label opens that event; the rest of the stripe
+                // keeps the grid's tap-to-create, since stripes cover whole days
+                // the stripe layer spans every column, so shift x by this column's offset
+                binding.weekContextualStripes.stripeWithLabelAt(view.left + event.x, event.y)?.let { stripe ->
+                    openContextualEvent(stripe)
+                    return true
+                }
+
                 val hour = (event.y / rowHeight).toInt()
                 selectedGrid = WeekGridItemBinding.inflate(layoutInflater).root.apply {
                     view.addView(this)
@@ -533,6 +541,14 @@ class WeekFragment : Fragment(), WeeklyCalendar {
                 return super.onSingleTapUp(event)
             }
         })
+    }
+
+    private fun openContextualEvent(stripe: ContextualStripe) {
+        Intent(context, getActivityToOpen(stripe.isTask)).apply {
+            putExtra(EVENT_ID, stripe.eventId)
+            putExtra(EVENT_OCCURRENCE_TS, stripe.occurrenceTS)
+            startActivity(this)
+        }
     }
 
     private fun launchNewEventIntent(timestamp: Long, isTask: Boolean) {

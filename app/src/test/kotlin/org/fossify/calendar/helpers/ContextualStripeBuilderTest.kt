@@ -21,8 +21,20 @@ class ContextualStripeBuilderTest {
     private fun allDay(firstDay: Int, lastDay: Int) =
         Event(id = 1L, startTS = ts(10, firstDay), endTS = ts(10, lastDay, 12), flags = FLAG_ALL_DAY, color = 0xABCDEF)
 
+    // geometry tests: the open-target fields are checked once, in stripeKnowsWhichOccurrenceToOpen
     private fun build(vararg events: Event, daysCount: Int = 7, fallbackColor: Int = 0) =
         ContextualStripeBuilder.build(events.toList(), monday, daysCount, zone, fallbackColor)
+            .map { it.copy(eventId = 0L, occurrenceTS = 0L, isTask = false) }
+
+    @Test
+    fun stripeKnowsWhichOccurrenceToOpen() {
+        val event = Event(id = 42L, startTS = ts(10, 6, 9), endTS = ts(10, 7, 17), color = 1)
+        val stripes = ContextualStripeBuilder.build(listOf(event), monday, 7, zone)
+        // every day-slice of a multi-day event opens the same occurrence
+        assertEquals(listOf(42L, 42L), stripes.map { it.eventId })
+        assertEquals(listOf(ts(10, 6, 9), ts(10, 6, 9)), stripes.map { it.occurrenceTS })
+        assertEquals(listOf(false, false), stripes.map { it.isTask })
+    }
 
     @Test
     fun timedEventBecomesOneStripeInItsColumn() {
@@ -128,7 +140,7 @@ class ContextualStripeBuilderTest {
         // Sun 25 Oct 2026 is 25h long in London
         val sunday = LocalDate(2026, 10, 19)
         val event = Event(id = 1L, startTS = ts(10, 25), endTS = ts(10, 25, 12), flags = FLAG_ALL_DAY, color = 1)
-        val stripes = ContextualStripeBuilder.build(listOf(event), sunday, 7, zone)
+        val stripes = ContextualStripeBuilder.build(listOf(event), sunday, 7, zone).map { it.copy(eventId = 0L, occurrenceTS = 0L) }
         assertEquals(listOf(ContextualStripe(6, 0, 1440, 1)), stripes)
     }
 

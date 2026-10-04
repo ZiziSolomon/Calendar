@@ -4,7 +4,17 @@ package org.fossify.calendar.models
  * One contextual event's slice of a single week-view day column, drawn as a background stripe.
  * Minutes are 0..1440 from the start of that day.
  */
-data class ContextualStripe(val dayIndex: Int, val startMinute: Int, val endMinute: Int, val color: Int, val title: String = "") {
+data class ContextualStripe(
+    val dayIndex: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val color: Int,
+    val title: String = "",
+    // what tapping the stripe's label opens: the event, at this occurrence
+    val eventId: Long = 0L,
+    val occurrenceTS: Long = 0L,
+    val isTask: Boolean = false,
+) {
     data class Bounds(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
     /**

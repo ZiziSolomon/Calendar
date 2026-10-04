@@ -40,6 +40,9 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
     }
     private val labelPadding = resources.getDimension(org.fossify.commons.R.dimen.small_margin)
     private val labelLineHeight = labelPaint.fontSpacing
+    private val minTouchHeight = resources.getDimension(R.dimen.contextual_label_min_touch_height)
+    // where each stripe's label was last drawn, by stripe index; null = not drawn
+    private var labelBounds = emptyList<ContextualStripe.Bounds?>()
     private var visibleTop = 0f
     private var visibleBottom = Float.MAX_VALUE
 
@@ -55,6 +58,7 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
     /** Drawn in the given order; ContextualStripeBuilder sorts them for nesting. */
     fun setStripes(newStripes: List<ContextualStripe>) {
         stripes = newStripes
+        labelBounds = emptyList()
         coveredBy = ContextualStripeOverlap.coveredBy(newStripes)
         invalidate()
     }
@@ -72,6 +76,7 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        labelBounds = emptyList()
         if (stripes.isEmpty()) {
             return
         }
@@ -108,10 +113,16 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
         }
     }
 
+    /** The stripe whose drawn label is at (x, y) in this view's coordinates, if any. */
+    fun stripeWithLabelAt(x: Float, y: Float): ContextualStripe? {
+        return ContextualLabelLayout.hitTest(labelBounds, x, y, minTouchHeight)?.let { stripes.getOrNull(it) }
+    }
+
     private fun drawLabels(canvas: Canvas, allBounds: List<ContextualStripe.Bounds>) {
         val items = stripes.mapIndexed { i, stripe -> ContextualLabelLayout.Item(stripe.dayIndex, allBounds[i]) }
         val tops = ContextualLabelLayout.place(items, visibleTop, visibleBottom, labelLineHeight, labelPadding)
         val baselineOffset = -labelPaint.fontMetrics.ascent
+        val drawn = arrayOfNulls<ContextualStripe.Bounds>(stripes.size)
 
         tops.forEachIndexed { i, top ->
             val title = stripes[i].title
@@ -127,7 +138,9 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
 
             val text = TextUtils.ellipsize(title, labelPaint, available, TextUtils.TruncateAt.END)
             canvas.drawText(text, 0, text.length, bounds.left + labelPadding, top + baselineOffset, labelPaint)
+            drawn[i] = ContextualStripe.Bounds(bounds.left, top, bounds.right, top + labelLineHeight)
         }
+        labelBounds = drawn.toList()
     }
 
     companion object {
