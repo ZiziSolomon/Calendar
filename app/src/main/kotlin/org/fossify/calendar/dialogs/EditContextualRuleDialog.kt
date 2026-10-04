@@ -1,12 +1,16 @@
 package org.fossify.calendar.dialogs
 
+import android.os.Handler
+import android.os.Looper
 import android.text.InputType
 import androidx.appcompat.app.AlertDialog
 import org.fossify.calendar.R
 import org.fossify.calendar.activities.SimpleActivity
 import org.fossify.calendar.databinding.DialogContextualRuleBinding
 import org.fossify.calendar.extensions.eventsHelper
+import org.fossify.calendar.helpers.BoundedRunner
 import org.fossify.calendar.helpers.ContextualRuleEvaluator
+import org.fossify.calendar.helpers.ContextualRulePreview
 import org.fossify.calendar.helpers.ContextualRuleText
 import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.MATCH_ALL
@@ -14,17 +18,25 @@ import org.fossify.calendar.helpers.MATCH_DURATION_OVER
 import org.fossify.calendar.helpers.MATCH_EVENT_ID
 import org.fossify.calendar.helpers.MATCH_TITLE_CONTAINS
 import org.fossify.calendar.helpers.MATCH_TITLE_REGEX
+import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.CalendarEntity
 import org.fossify.calendar.models.ContextualRule
+import org.fossify.calendar.models.Event
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getAlertDialogBuilder
+import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.onTextChangeListener
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.value
 import org.fossify.commons.extensions.viewBinding
+import org.fossify.commons.helpers.DAY_SECONDS
+import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.RadioItem
+import org.fossify.commons.views.MyTextView
+import org.joda.time.DateTime
+import java.util.concurrent.Executors
 
 class EditContextualRuleDialog(
     val activity: SimpleActivity,
@@ -41,6 +53,14 @@ class EditContextualRuleDialog(
     // remembered per type, so flipping between types while editing doesn't lose what was typed
     private val inputPerType = HashMap<Int, String>()
 
+    // live preview (§1.5): debounced, run off the UI thread under a time budget, stale results dropped
+    private var previewEvents: List<Event>? = null
+    private val previewExecutor = Executors.newSingleThreadExecutor()
+    private val previewRunner = BoundedRunner(ContextualRulePreview.TIME_BUDGET_MILLIS)
+    private val handler = Handler(Looper.getMainLooper())
+    private var previewGeneration = 0
+    private val previewRunnable = Runnable { runPreview() }
+
     init {
         inputPerType[rule.matchType] = if (rule.matchType == MATCH_DURATION_OVER) {
             ContextualRuleText.patternToHoursInput(rule.pattern)
@@ -54,9 +74,11 @@ class EditContextualRuleDialog(
             contextualRulePattern.onTextChangeListener {
                 inputPerType[rule.matchType] = it
                 showPatternError()
+                schedulePreview()
             }
         }
         showType()
+        loadPreviewEvents()
 
         activity.eventsHelper.getCalendars(activity, false) {
             calendars = it
@@ -72,18 +94,108 @@ class EditContextualRuleDialog(
                     dialog = this,
                     titleId = if (isNewRule) R.string.add_contextual_rule else R.string.edit_contextual_rule
                 ) { alertDialog ->
+                    alertDialog.setOnDismissListener {
+                        handler.removeCallbacks(previewRunnable)
+                        previewExecutor.shutdownNow()
+                        previewRunner.shutdown()
+                    }
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                         if (applyInput()) {
-                            ContextualRulesHelper(activity).saveRule(rule) {
-                                activity.runOnUiThread {
-                                    alertDialog.dismiss()
-                                    callback()
-                                }
-                            }
+                            saveUnlessTooSlow(alertDialog)
                         }
                     }
                 }
             }
+    }
+
+    /**
+     * A regex that blows the preview's time budget on the user's own events would wedge the real
+     * event fetch, which has no deadline. Re-checked at save time, since the debounced preview
+     * may not have caught up with the last keystroke.
+     */
+    private fun saveUnlessTooSlow(dialog: AlertDialog) {
+        val events = previewEvents
+        ensureBackgroundThread {
+            if (rule.matchType == MATCH_TITLE_REGEX && events != null && previewRunner.run { ContextualRulePreview.compute(rule, events) } == null) {
+                activity.toast(R.string.contextual_preview_too_slow)
+                return@ensureBackgroundThread
+            }
+
+            ContextualRulesHelper(activity).saveRule(rule) {
+                activity.runOnUiThread {
+                    dialog.dismiss()
+                    callback()
+                }
+            }
+        }
+    }
+
+    private fun loadPreviewEvents() {
+        ensureBackgroundThread {
+            val now = getNowSeconds()
+            // every calendar, not just the displayed ones: a rule can target a hidden calendar
+            activity.eventsHelper.getEventsSync(now, now + ContextualRulePreview.PREVIEW_DAYS * DAY_SECONDS, applyTypeFilter = false) {
+                activity.runOnUiThread {
+                    previewEvents = it
+                    schedulePreview()
+                }
+            }
+        }
+    }
+
+    private fun schedulePreview() {
+        handler.removeCallbacks(previewRunnable)
+        handler.postDelayed(previewRunnable, PREVIEW_DEBOUNCE_MS)
+    }
+
+    private fun runPreview() {
+        val events = previewEvents ?: return
+        if (previewExecutor.isShutdown) {
+            return
+        }
+
+        val generation = ++previewGeneration
+        val formRule = ruleFromForm()
+        previewExecutor.execute {
+            // null = overran the budget
+            val result = previewRunner.run { ContextualRulePreview.compute(formRule, events) }
+            activity.runOnUiThread {
+                if (generation == previewGeneration) {
+                    showPreview(result)
+                }
+            }
+        }
+    }
+
+    // the rule as currently typed, without the validation applyInput() does on save
+    private fun ruleFromForm(): ContextualRule {
+        val input = binding.contextualRulePattern.value
+        val pattern = when (rule.matchType) {
+            MATCH_DURATION_OVER -> ContextualRuleText.hoursInputToPattern(input) ?: ""
+            MATCH_ALL, MATCH_EVENT_ID -> rule.pattern
+            else -> input
+        }
+        return rule.copy(pattern = pattern)
+    }
+
+    private fun showPreview(result: ContextualRulePreview.Result?) {
+        binding.contextualRulePreviewSummary.text = when {
+            result == null -> activity.getString(R.string.contextual_preview_too_slow)
+            result.total == 0 -> activity.getString(R.string.contextual_preview_no_events)
+            else -> activity.getString(R.string.contextual_preview_summary, result.matchCount, result.total)
+        }
+
+        val textColor = activity.getProperTextColor()
+        binding.contextualRulePreviewSamples.removeAllViews()
+        result?.samples?.forEach { event ->
+            val date = DateTime(event.startTS * 1000L).toString("EEE d MMM")
+            MyTextView(activity).apply {
+                text = activity.getString(R.string.contextual_preview_sample, date, event.title)
+                setTextColor(textColor)
+                maxLines = 1
+                binding.contextualRulePreviewSamples.addView(this)
+            }
+        }
     }
 
     private fun typeName(matchType: Int) = activity.getString(
@@ -107,6 +219,7 @@ class EditContextualRuleDialog(
         RadioGroupDialog(activity, ArrayList(items), rule.matchType) {
             rule.matchType = it as Int
             showType()
+            schedulePreview()
         }
     }
 
@@ -152,6 +265,7 @@ class EditContextualRuleDialog(
         RadioGroupDialog(activity, items, checked) {
             rule.calendarId = if (it == ALL_CALENDARS) null else it as Long
             showCalendar()
+            schedulePreview()
         }
     }
 
@@ -199,5 +313,6 @@ class EditContextualRuleDialog(
 
     companion object {
         private const val ALL_CALENDARS = -1
+        private const val PREVIEW_DEBOUNCE_MS = 250L
     }
 }
