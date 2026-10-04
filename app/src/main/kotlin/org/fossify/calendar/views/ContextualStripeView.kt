@@ -35,9 +35,9 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
 
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0)
 
+    /** Drawn in the given order; ContextualStripeBuilder sorts them for nesting. */
     fun setStripes(newStripes: List<ContextualStripe>) {
-        // longest first, so a shorter context nested inside a longer one stays visible on top
-        stripes = newStripes.sortedByDescending { it.endMinute - it.startMinute }
+        stripes = newStripes
         invalidate()
     }
 

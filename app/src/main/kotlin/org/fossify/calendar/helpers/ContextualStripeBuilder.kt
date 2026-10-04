@@ -29,26 +29,31 @@ object ContextualStripeBuilder {
         zone: DateTimeZone = DateTimeZone.getDefault(),
         fallbackColor: Int = 0
     ): List<ContextualStripe> {
+        val lastDay = firstDay.plusDays(daysCount - 1)
         val stripes = ArrayList<ContextualStripe>()
-        for (event in events) {
+        // longest events first, so ties in the stable sort below also favour the nested one
+        for (event in events.sortedByDescending { it.endTS - it.startTS }) {
             val color = if (event.color == 0) fallbackColor else event.color
             val start = DateTime(event.startTS * 1000L, zone)
             val end = DateTime(event.endTS * 1000L, zone)
             val startDay = start.toLocalDate()
             val endDay = end.toLocalDate()
 
-            var day = startDay
-            while (!day.isAfter(endDay)) {
+            // only walk the visible days: a contextual event can span months ("school term")
+            var day = maxOf(startDay, firstDay)
+            val until = minOf(endDay, lastDay)
+            while (!day.isAfter(until)) {
                 val dayIndex = Days.daysBetween(firstDay, day).days
-                if (dayIndex in 0 until daysCount) {
-                    slice(event, start, end, day, startDay, endDay)?.let { (startMinute, endMinute) ->
-                        stripes.add(ContextualStripe(dayIndex, startMinute, endMinute, color))
-                    }
+                slice(event, start, end, day, startDay, endDay)?.let { (startMinute, endMinute) ->
+                    stripes.add(ContextualStripe(dayIndex, startMinute, endMinute, color))
                 }
                 day = day.plusDays(1)
             }
         }
-        return stripes
+
+        // drawn in this order: longest first, so a shorter context nested inside a longer one
+        // (a weekend inside an on-call week) is painted last and stays visible on top
+        return stripes.sortedByDescending { it.endMinute - it.startMinute }
     }
 
     private fun slice(event: Event, start: DateTime, end: DateTime, day: LocalDate, startDay: LocalDate, endDay: LocalDate): Pair<Int, Int>? {
