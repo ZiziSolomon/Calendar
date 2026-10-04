@@ -34,6 +34,10 @@ class IcsImporter(val activity: SimpleActivity) {
     private var curLocation = ""
     private var curDescription = ""
     private var curImportId = ""
+    private var curContextual = false
+
+    // imported events whose VEVENT carried X-FOSSIFY-CONTEXTUAL; ids are filled in by the inserts
+    private val eventsToMark = ArrayList<Event>()
     private var curRecurrenceDayCode = ""
     private var curRrule = ""
     private var curFlags = 0
@@ -72,6 +76,7 @@ class IcsImporter(val activity: SimpleActivity) {
         eventReminders: ArrayList<Int>? = null,
         loadFromAssets: Boolean = false,
     ): ImportResult {
+        eventsToMark.clear()
         try {
             val calendars = eventsHelper.getCalendarsSync()
             val existingEvents = activity.eventsDB.getEventsOrTasksWithImportIds()
@@ -191,6 +196,8 @@ class IcsImporter(val activity: SimpleActivity) {
                         if (color.trimStart('-').areDigitsOnly()) {
                             curColor = Integer.parseInt(color)
                         }
+                    } else if (line.startsWith(FOSSIFY_CONTEXTUAL)) {
+                        curContextual = IcsContextualMark.parse(line.substring(FOSSIFY_CONTEXTUAL.length))
                     } else if (line.startsWith(MISSING_YEAR)) {
                         if (line.substring(MISSING_YEAR.length) == "1") {
                             curFlags = curFlags or FLAG_MISSING_YEAR
@@ -285,6 +292,7 @@ class IcsImporter(val activity: SimpleActivity) {
                             existingEvents.filter { curImportId.isNotEmpty() && curImportId == it.importId }
                                 .maxByOrNull { it.lastUpdated }
                         if (eventToUpdate != null && eventToUpdate.lastUpdated >= curLastModified) {
+                            if (curContextual) eventsToMark.add(eventToUpdate)
                             eventsAlreadyExist++
                             line = curLine
                             continue
@@ -359,7 +367,9 @@ class IcsImporter(val activity: SimpleActivity) {
 
                         if (event.importId.isEmpty()) {
                             event.importId = event.hashCode().toString()
-                            if (existingEvents.map { it.importId }.contains(event.importId)) {
+                            val existing = existingEvents.firstOrNull { it.importId == event.importId }
+                            if (existing != null) {
+                                if (curContextual) eventsToMark.add(existing)
                                 eventsAlreadyExist++
                                 line = curLine
                                 continue
@@ -405,6 +415,7 @@ class IcsImporter(val activity: SimpleActivity) {
                                 showToasts = false
                             )
                         }
+                        if (curContextual) eventsToMark.add(event)
                         eventsImported++
                         resetValues()
                     }
@@ -417,6 +428,12 @@ class IcsImporter(val activity: SimpleActivity) {
             eventsHelper.insertEvents(events as ArrayList<Event>, addToCalDAV = true)
             tasks.filter { it.isTaskCompleted() }.forEach {
                 activity.updateTaskCompletion(it, completed = true)
+            }
+
+            // after the inserts, so every event has its id; markEvents skips existing marks
+            val idsToMark = eventsToMark.mapNotNull { it.id }.distinct()
+            if (idsToMark.isNotEmpty()) {
+                ContextualRulesHelper(activity).markEvents(idsToMark)
             }
         } catch (e: Exception) {
             activity.showErrorToast(e)
@@ -535,6 +552,7 @@ class IcsImporter(val activity: SimpleActivity) {
         curLocation = ""
         curDescription = ""
         curImportId = ""
+        curContextual = false
         curRecurrenceDayCode = ""
         curRrule = ""
         curFlags = 0

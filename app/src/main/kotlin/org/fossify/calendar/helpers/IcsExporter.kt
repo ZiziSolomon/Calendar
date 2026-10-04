@@ -5,6 +5,7 @@ import android.provider.CalendarContract.Events
 import org.fossify.calendar.R
 import org.fossify.calendar.extensions.calDAVHelper
 import org.fossify.calendar.extensions.calendarsDB
+import org.fossify.calendar.extensions.contextualRulesDB
 import org.fossify.calendar.extensions.eventsHelper
 import org.fossify.calendar.helpers.IcsExporter.ExportResult.EXPORT_FAIL
 import org.fossify.calendar.helpers.IcsExporter.ExportResult.EXPORT_OK
@@ -30,6 +31,7 @@ class IcsExporter(private val context: Context) {
     private var calendars = ArrayList<CalDAVCalendar>()
     private val reminderLabel = context.getString(R.string.reminder)
     private val exportTime = Formatter.getExportedTime(System.currentTimeMillis())
+    private var markedIds = emptySet<Long>()
 
     fun exportEvents(
         outputStream: OutputStream?,
@@ -44,6 +46,7 @@ class IcsExporter(private val context: Context) {
 
         ensureBackgroundThread {
             calendars = context.calDAVHelper.getCalDAVCalendars("", false)
+            markedIds = IcsContextualMark.markedEventIds(context.contextualRulesDB.getRules())
             if (showExportingToast) {
                 context.toast(org.fossify.commons.R.string.exporting)
             }
@@ -180,6 +183,7 @@ class IcsExporter(private val context: Context) {
                 writeLn("$DTEND:${Formatter.getExportedTime(event.endTS * 1000L)}")
             }
             writeLn("$MISSING_YEAR${if (event.hasMissingYear()) 1 else 0}")
+            if (IcsContextualMark.isMarked(event, markedIds)) writeLn(IcsContextualMark.LINE)
 
             writeLn("$DTSTAMP$exportTime")
             writeLn("$CLASS:${getAccessLevelStringFromEventAccessLevel(event.accessLevel)}")
@@ -219,6 +223,7 @@ class IcsExporter(private val context: Context) {
                 writeLn("$DTSTART:${Formatter.getExportedTime(task.startTS * 1000L)}")
             }
 
+            if (IcsContextualMark.isMarked(task, markedIds)) writeLn(IcsContextualMark.LINE)
             writeLn("$DTSTAMP$exportTime")
             if (task.isTaskCompleted()) {
                 writeLn("$STATUS$COMPLETED")
