@@ -3,14 +3,18 @@ package org.fossify.calendar.views
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.text.TextPaint
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.graphics.ColorUtils
 import org.fossify.calendar.R
 import org.fossify.calendar.extensions.config
 import org.fossify.calendar.extensions.getWeeklyViewItemHeight
+import org.fossify.calendar.helpers.ContextualLabelLayout
 import org.fossify.calendar.models.ContextualStripe
 import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.extensions.getProperTextColor
 
 /**
  * Background layer of the week view, sitting between the hour grid and the event columns.
@@ -24,7 +28,18 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
     private val cornerRadius = resources.getDimension(R.dimen.contextual_stripe_corner_radius)
     private val inset = resources.getDimension(R.dimen.contextual_stripe_inset)
     private val daysCount = context.config.weeklyViewDays
+    private val showLabels = context.config.labelContextualStripes
     private var stripes = emptyList<ContextualStripe>()
+
+    // labels are drawn outside the translucent layer, so they stay readable
+    private val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = resources.getDimension(org.fossify.commons.R.dimen.smaller_text_size)
+        color = ColorUtils.setAlphaComponent(context.getProperTextColor(), LABEL_ALPHA)
+    }
+    private val labelPadding = resources.getDimension(org.fossify.commons.R.dimen.small_margin)
+    private val labelLineHeight = labelPaint.fontSpacing
+    private var visibleTop = 0f
+    private var visibleBottom = Float.MAX_VALUE
 
     // the layer alpha is applied once to everything, so overlapping stripes don't darken (§3.12)
     private val layerAlpha = run {
@@ -41,6 +56,17 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
         invalidate()
     }
 
+    /** The scrolled-into-view part of this view, in its own coordinates. Labels stick to its top. */
+    fun setVisibleRange(top: Float, bottom: Float) {
+        if (top != visibleTop || bottom != visibleBottom) {
+            visibleTop = top
+            visibleBottom = bottom
+            if (showLabels && stripes.isNotEmpty()) {
+                invalidate()
+            }
+        }
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (stripes.isEmpty()) {
@@ -49,19 +75,48 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
 
         val rowHeight = context.getWeeklyViewItemHeight()
         val isRtl = layoutDirection == LAYOUT_DIRECTION_RTL
+        val allBounds = stripes.map { it.bounds(width, daysCount, rowHeight, inset, isRtl) }
+
         val saveCount = canvas.saveLayerAlpha(0f, 0f, width.toFloat(), height.toFloat(), layerAlpha)
-        for (stripe in stripes) {
-            val bounds = stripe.bounds(width, daysCount, rowHeight, inset, isRtl)
+        stripes.forEachIndexed { i, stripe ->
+            val bounds = allBounds[i]
             paint.color = stripe.color or OPAQUE  // only the layer carries alpha
             canvas.drawRoundRect(bounds.left, bounds.top, bounds.right, bounds.bottom, cornerRadius, cornerRadius, paint)
         }
         canvas.restoreToCount(saveCount)
+
+        if (showLabels) {
+            drawLabels(canvas, allBounds)
+        }
+    }
+
+    private fun drawLabels(canvas: Canvas, allBounds: List<ContextualStripe.Bounds>) {
+        val items = stripes.mapIndexed { i, stripe -> ContextualLabelLayout.Item(stripe.dayIndex, allBounds[i]) }
+        val tops = ContextualLabelLayout.place(items, visibleTop, visibleBottom, labelLineHeight, labelPadding)
+        val baselineOffset = -labelPaint.fontMetrics.ascent
+
+        tops.forEachIndexed { i, top ->
+            val title = stripes[i].title
+            if (top == null || title.isBlank()) {
+                return@forEachIndexed
+            }
+
+            val bounds = allBounds[i]
+            val available = bounds.right - bounds.left - 2 * labelPadding
+            if (available <= 0f) {
+                return@forEachIndexed
+            }
+
+            val text = TextUtils.ellipsize(title, labelPaint, available, TextUtils.TruncateAt.END)
+            canvas.drawText(text, 0, text.length, bounds.left + labelPadding, top + baselineOffset, labelPaint)
+        }
     }
 
     companion object {
         // plan §4 decision 7 defaults; tuned on device in Phase 8
         private const val LIGHT_ALPHA = 0.15f
         private const val DARK_ALPHA = 0.20f
+        private const val LABEL_ALPHA = 0xCC
         private const val OPAQUE = 0xFF000000.toInt()
     }
 }

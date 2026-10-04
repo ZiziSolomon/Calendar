@@ -221,6 +221,7 @@ class SettingsActivity : SimpleActivity() {
         setupViewToOpenFromListWidget()
         setupDimEvents()
         setupShowContextualEvents()
+        setupLabelContextualStripes()
         setupDimCompletedTasks()
         setupAllowChangingTimeZones()
         updateTextColors(binding.settingsHolder)
@@ -907,6 +908,14 @@ class SettingsActivity : SimpleActivity() {
         settingsShowContextualEventsHolder.setOnClickListener {
             settingsShowContextualEvents.toggle()
             config.showContextualEvents = settingsShowContextualEvents.isChecked
+        }
+    }
+
+    private fun setupLabelContextualStripes() = binding.apply {
+        settingsLabelContextualStripes.isChecked = config.labelContextualStripes
+        settingsLabelContextualStripesHolder.setOnClickListener {
+            settingsLabelContextualStripes.toggle()
+            config.labelContextualStripes = settingsLabelContextualStripes.isChecked
         }
     }
 

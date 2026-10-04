@@ -185,6 +185,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
                 oldy: Int
             ) {
                 checkScrollLimits(y)
+                updateStripeLabelRange(y)
             }
         })
 
@@ -196,6 +197,8 @@ class WeekFragment : Fragment(), WeeklyCalendar {
 
             val initialScrollY = (rowHeight * config.startWeeklyAt).toInt()
             updateScrollY(max(listener?.getCurrScrollY() ?: 0, initialScrollY))
+            // scrolling to the same position fires no scroll event, so seed the label range here
+            updateStripeLabelRange(scrollView.scrollY)
         }
 
         wasFragmentInit = true
@@ -1089,6 +1092,11 @@ class WeekFragment : Fragment(), WeeklyCalendar {
                 }
             }
         }
+    }
+
+    // stripe labels stick to the top of what's on screen, so the stripe view needs to know
+    private fun updateStripeLabelRange(scrollY: Int) {
+        binding.weekContextualStripes.setVisibleRange(scrollY.toFloat(), (scrollY + scrollView.height).toFloat())
     }
 
     fun updateScrollY(y: Int) {

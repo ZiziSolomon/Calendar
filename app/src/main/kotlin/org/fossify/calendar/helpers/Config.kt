@@ -173,6 +173,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(SHOW_CONTEXTUAL_EVENTS, true)
         set(showContextualEvents) = prefs.edit().putBoolean(SHOW_CONTEXTUAL_EVENTS, showContextualEvents).apply()
 
+    var labelContextualStripes: Boolean
+        get() = prefs.getBoolean(LABEL_CONTEXTUAL_STRIPES, true)
+        set(labelContextualStripes) = prefs.edit().putBoolean(LABEL_CONTEXTUAL_STRIPES, labelContextualStripes).apply()
+
     var dimCompletedTasks: Boolean
         get() = prefs.getBoolean(DIM_COMPLETED_TASKS, true)
         set(dimCompletedTasks) = prefs.edit().putBoolean(DIM_COMPLETED_TASKS, dimCompletedTasks)

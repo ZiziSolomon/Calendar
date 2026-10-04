@@ -64,6 +64,12 @@ class ContextualStripeBuilderTest {
     }
 
     @Test
+    fun everySliceCarriesTheEventTitleForItsLabel() {
+        val event = Event(id = 1L, startTS = ts(10, 9, 18), endTS = ts(10, 11, 18), title = "Away")
+        assertEquals(listOf("Away", "Away", "Away"), build(event).map { it.title })
+    }
+
+    @Test
     fun noEventsNoStripes() {
         assertEquals(emptyList<ContextualStripe>(), build())
     }
