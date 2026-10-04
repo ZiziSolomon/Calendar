@@ -12,6 +12,7 @@ import org.fossify.calendar.R
 import org.fossify.calendar.extensions.config
 import org.fossify.calendar.extensions.getWeeklyViewItemHeight
 import org.fossify.calendar.helpers.ContextualLabelLayout
+import org.fossify.calendar.helpers.ContextualStripeOverlap
 import org.fossify.calendar.models.ContextualStripe
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperTextColor
@@ -30,6 +31,7 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
     private val daysCount = context.config.weeklyViewDays
     private val showLabels = context.config.labelContextualStripes
     private var stripes = emptyList<ContextualStripe>()
+    private var coveredBy = emptyList<List<Int>>()
 
     // labels are drawn outside the translucent layer, so they stay readable
     private val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -41,8 +43,8 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
     private var visibleTop = 0f
     private var visibleBottom = Float.MAX_VALUE
 
-    // the layer alpha is applied once to everything, so overlapping stripes don't darken (§3.12)
-    private val layerAlpha = run {
+    // one alpha for every stripe; overlaps are tinted once, by the top stripe (§3.12)
+    private val stripeAlpha = run {
         val isDarkBackground = ColorUtils.calculateLuminance(context.getProperBackgroundColor()) < 0.5
         val alpha = if (isDarkBackground) DARK_ALPHA else LIGHT_ALPHA
         (alpha * 255).toInt()
@@ -53,6 +55,7 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
     /** Drawn in the given order; ContextualStripeBuilder sorts them for nesting. */
     fun setStripes(newStripes: List<ContextualStripe>) {
         stripes = newStripes
+        coveredBy = ContextualStripeOverlap.coveredBy(newStripes)
         invalidate()
     }
 
@@ -77,13 +80,28 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
         val isRtl = layoutDirection == LAYOUT_DIRECTION_RTL
         val allBounds = stripes.map { it.bounds(width, daysCount, rowHeight, inset, isRtl) }
 
-        val saveCount = canvas.saveLayerAlpha(0f, 0f, width.toFloat(), height.toFloat(), layerAlpha)
+        // no saveLayer: a full-height offscreen layer was re-rendered on every frame of a week
+        // swipe and doubled the janky frames (8c.2). Instead each stripe is drawn translucent
+        // with the stripes on top of it clipped out, so overlaps don't darken. Rect clips are
+        // cheap; they leave the top stripe's rounded corners (4dp) untinted, which is invisible
+        // at this alpha
         stripes.forEachIndexed { i, stripe ->
             val bounds = allBounds[i]
-            paint.color = stripe.color or OPAQUE  // only the layer carries alpha
+            paint.color = stripe.color
+            paint.alpha = stripeAlpha
+            val covers = coveredBy.getOrNull(i).orEmpty()
+            if (covers.isNotEmpty()) {
+                canvas.save()
+                covers.forEach { j ->
+                    val top = allBounds[j]
+                    canvas.clipOutRect(top.left, top.top, top.right, top.bottom)
+                }
+            }
             canvas.drawRoundRect(bounds.left, bounds.top, bounds.right, bounds.bottom, cornerRadius, cornerRadius, paint)
+            if (covers.isNotEmpty()) {
+                canvas.restore()
+            }
         }
-        canvas.restoreToCount(saveCount)
 
         if (showLabels) {
             drawLabels(canvas, allBounds)
@@ -117,6 +135,5 @@ class ContextualStripeView(context: Context, attrs: AttributeSet, defStyle: Int)
         private const val LIGHT_ALPHA = 0.15f
         private const val DARK_ALPHA = 0.20f
         private const val LABEL_ALPHA = 0xCC
-        private const val OPAQUE = 0xFF000000.toInt()
     }
 }
