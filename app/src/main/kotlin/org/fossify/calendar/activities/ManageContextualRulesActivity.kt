@@ -154,7 +154,7 @@ class ManageContextualRulesActivity : SimpleActivity() {
         val extra = matches.size - ContextualRuleUsage.MAX_LISTED
         if (extra > 0) {
             list.addView(MyTextView(this).apply {
-                text = getString(R.string.contextual_rule_more_matches, extra)
+                text = resources.getQuantityString(R.plurals.contextual_rule_more_matches, extra, extra)
                 setTextColor(getProperTextColor())
                 setPadding(padding, padding / 2, padding, 0)
             })

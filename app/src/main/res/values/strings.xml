@@ -370,7 +370,10 @@
     </plurals>
     <string name="contextual_rule_usage_none">Matches no events</string>
     <string name="contextual_rule_show_matches">Show matches</string>
-    <string name="contextual_rule_more_matches">…and %d more</string>
+    <plurals name="contextual_rule_more_matches">
+        <item quantity="one">…and %d more event</item>
+        <item quantity="other">…and %d more events</item>
+    </plurals>
     <string name="contextual_list_tag">Context</string>
     <string name="contextual_rule_from_title">Make a rule from this title</string>
     <string name="contextual_rule_saved">Rule saved</string>
