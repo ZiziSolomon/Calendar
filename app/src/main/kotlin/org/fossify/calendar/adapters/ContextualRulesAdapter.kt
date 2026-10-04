@@ -17,6 +17,7 @@ class ContextualRulesAdapter(
     val rows: ArrayList<Row>,
     recyclerView: MyRecyclerView,
     val onRulesDeleted: () -> Unit,
+    val onShowMatches: (ContextualRule) -> Unit,
     itemClick: (Any) -> Unit
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
 
@@ -29,11 +30,21 @@ class ContextualRulesAdapter(
 
     override fun getActionMenuId() = R.menu.cab_contextual_rules
 
-    override fun prepareActionMode(menu: Menu) {}
+    override fun prepareActionMode(menu: Menu) {
+        menu.findItem(R.id.cab_show_matches).isVisible = isOneItemSelected()
+    }
 
     override fun actionItemPressed(id: Int) {
-        if (selectedKeys.isNotEmpty() && id == R.id.cab_delete) {
-            ConfirmationDialog(activity) { deleteSelected() }
+        if (selectedKeys.isEmpty()) {
+            return
+        }
+
+        when (id) {
+            R.id.cab_delete -> ConfirmationDialog(activity) { deleteSelected() }
+            R.id.cab_show_matches -> rows.firstOrNull { selectedKeys.contains(it.rule.id?.toInt()) }?.let {
+                onShowMatches(it.rule)
+                finishActMode()
+            }
         }
     }
 

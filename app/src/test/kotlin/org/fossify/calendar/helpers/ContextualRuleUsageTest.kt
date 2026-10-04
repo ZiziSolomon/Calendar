@@ -39,4 +39,36 @@ class ContextualRuleUsageTest {
         val events = listOf(event(1, "Early shift"), event(2, "Late shift"), event(3, "Lunch"))
         assertEquals(listOf(2, 3), ContextualRuleUsage.count(listOf(off, ContextualRule(id = null, matchType = MATCH_ALL)), events))
     }
+
+    @Test
+    fun matchesShowEachSeriesAtItsNextOccurrence() {
+        val week = 7 * 86400L
+        val events = listOf(
+            event(5, "Gym", start = 0), event(5, "Gym", start = week), event(5, "Gym", start = 2 * week),
+            event(6, "Gym late", parentId = 5, start = 3 * week)
+        )
+        val matches = ContextualRuleUsage.matches(contains("gym"), events, nowTS = week - 1)
+        assertEquals(1, matches.size)
+        assertEquals(week, matches[0].startTS)
+    }
+
+    @Test
+    fun upcomingSoonestFirstThenPastMostRecentFirst() {
+        val events = listOf(event(1, "Shift A", start = 100), event(2, "Shift B", start = 900), event(3, "Shift C", start = 500), event(4, "Shift D", start = 300))
+        val matches = ContextualRuleUsage.matches(contains("shift"), events, nowTS = 400)
+        assertEquals(listOf(3L, 2L, 4L, 1L), matches.map { it.id })
+    }
+
+    @Test
+    fun aSeriesEntirelyInThePastShowsItsLatestOccurrence() {
+        val events = listOf(event(7, "On call", start = 100), event(7, "On call", start = 200))
+        assertEquals(200L, ContextualRuleUsage.matches(contains("on call"), events, nowTS = 1000).single().startTS)
+    }
+
+    @Test
+    fun countAgreesWithMatches() {
+        val events = listOf(event(1, "Shift"), event(1, "Shift", start = 99_999), event(2, "Late shift"), event(3, "Lunch"))
+        val rule = contains("shift")
+        assertEquals(ContextualRuleUsage.matches(rule, events, nowTS = 0).size, ContextualRuleUsage.count(listOf(rule), events).single())
+    }
 }
