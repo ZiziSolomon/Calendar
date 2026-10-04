@@ -166,6 +166,13 @@ const val FLAG_IS_IN_PAST = 2
 const val FLAG_MISSING_YEAR = 4
 const val FLAG_TASK_COMPLETED = 8
 
+// contextual rule match types, stored in contextual_rules.match_type, so never renumber
+const val MATCH_ALL = 1                 // every event (scoped by calendar_id, if set)
+const val MATCH_TITLE_CONTAINS = 2      // case-insensitive substring of the title
+const val MATCH_TITLE_REGEX = 3         // regex searched within the title
+const val MATCH_DURATION_OVER = 4       // events longer than `pattern` minutes
+const val MATCH_EVENT_ID = 5            // one specific event (whole series, if repeating)
+
 // constants related to ICS file exporting / importing
 const val BEGIN_CALENDAR = "BEGIN:VCALENDAR"
 const val END_CALENDAR = "END:VCALENDAR"
