@@ -80,6 +80,18 @@ class ContextualRulesHelper(val context: Context) {
         return dao.getRulesForEventId(seriesId).any { it.enabled }
     }
 
+    /**
+     * Points event marks back at their events' current local ids after a sync may have
+     * re-imported them (see ContextualRuleRepair). Call from a background thread.
+     */
+    fun repairEventKeys() {
+        val repaired = ContextualRuleRepair.rekey(dao.getRules()) { context.eventsDB.getEventIdWithImportId(it) }
+        if (repaired.isNotEmpty()) {
+            repaired.forEach { dao.insertOrUpdate(it) }
+            rulesChanged()
+        }
+    }
+
     private fun seriesOf(eventId: Long) = context.eventsDB.getEventOrTaskWithId(eventId)?.let { event ->
         if (event.parentId != 0L) context.eventsDB.getEventOrTaskWithId(event.parentId) ?: event else event
     }
