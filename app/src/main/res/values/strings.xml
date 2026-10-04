@@ -349,7 +349,11 @@
     <string name="contextual_rule_needs_calendar">Pick a calendar. Without one, every event would become contextual.</string>
     <string name="contextual_rule_bad_regex">Invalid pattern: %s</string>
     <string name="contextual_preview_loading">Checking your next 30 days…</string>
-    <string name="contextual_preview_summary">Matches %1$d of %2$d events in the next 30 days</string>
+    <!-- quantity follows the total (%2$d) -->
+    <plurals name="contextual_preview_summary">
+        <item quantity="one">Matches %1$d of %2$d event in the next 30 days</item>
+        <item quantity="other">Matches %1$d of %2$d events in the next 30 days</item>
+    </plurals>
     <string name="contextual_preview_no_events">No events in the next 30 days to test against</string>
     <string name="contextual_preview_too_slow">This pattern is too slow on your events. Try a simpler one.</string>
     <string name="contextual_preview_sample">%1$s · %2$s</string>

@@ -182,7 +182,7 @@ class EditContextualRuleDialog(
         binding.contextualRulePreviewSummary.text = when {
             result == null -> activity.getString(R.string.contextual_preview_too_slow)
             result.total == 0 -> activity.getString(R.string.contextual_preview_no_events)
-            else -> activity.getString(R.string.contextual_preview_summary, result.matchCount, result.total)
+            else -> activity.resources.getQuantityString(R.plurals.contextual_preview_summary, result.total, result.matchCount, result.total)
         }
 
         val textColor = activity.getProperTextColor()
