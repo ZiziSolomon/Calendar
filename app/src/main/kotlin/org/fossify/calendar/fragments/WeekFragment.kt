@@ -41,6 +41,7 @@ import org.fossify.calendar.extensions.intersects
 import org.fossify.calendar.extensions.seconds
 import org.fossify.calendar.extensions.shouldStrikeThrough
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualStripeBuilder
 import org.fossify.calendar.helpers.EDIT_ALL_OCCURRENCES
 import org.fossify.calendar.helpers.EDIT_FUTURE_OCCURRENCES
 import org.fossify.calendar.helpers.EDIT_SELECTED_OCCURRENCE
@@ -613,8 +614,21 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         addEvents(currEvents)
     }
 
-    private fun addEvents(events: ArrayList<Event>) {
+    private fun addEvents(allEvents: ArrayList<Event>) {
         initGrid()
+
+        // contextual events become background stripes and must never reach the collision
+        // packing below, or they'd shove real events sideways (docs/CONTEXTUAL_EVENTS.md §3.11)
+        val (contextualEvents, events) = allEvents.partition { it.isContextual }
+        binding.weekContextualStripes.setStripes(
+            ContextualStripeBuilder.build(
+                events = contextualEvents,
+                firstDay = weekDateTime.toLocalDate(),
+                daysCount = config.weeklyViewDays,
+                fallbackColor = primaryColor
+            )
+        )
+
         allDayHolders.clear()
         allDayRows.clear()
         eventTimeRanges.clear()

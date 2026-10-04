@@ -165,6 +165,9 @@ const val FLAG_ALL_DAY = 1
 const val FLAG_IS_IN_PAST = 2
 const val FLAG_MISSING_YEAR = 4
 const val FLAG_TASK_COMPLETED = 8
+// runtime only, like FLAG_IS_IN_PAST: recomputed from contextual_rules on every fetch, so a
+// value that leaks into the DB is overwritten next time and the DB copy is never trusted
+const val FLAG_IS_CONTEXTUAL = 16
 
 // contextual rule match types, stored in contextual_rules.match_type, so never renumber
 const val MATCH_ALL = 1                 // every event (scoped by calendar_id, if set)

@@ -11,6 +11,7 @@ import org.fossify.calendar.extensions.seconds
 import org.fossify.calendar.helpers.CALDAV
 import org.fossify.calendar.helpers.DAY
 import org.fossify.calendar.helpers.FLAG_ALL_DAY
+import org.fossify.calendar.helpers.FLAG_IS_CONTEXTUAL
 import org.fossify.calendar.helpers.FLAG_IS_IN_PAST
 import org.fossify.calendar.helpers.FLAG_MISSING_YEAR
 import org.fossify.calendar.helpers.FLAG_TASK_COMPLETED
@@ -251,6 +252,13 @@ data class Event(
         get() = flags and FLAG_IS_IN_PAST != 0
         set(isPastEvent) {
             flags = flags.addBitIf(isPastEvent, FLAG_IS_IN_PAST)
+        }
+
+    // only meaningful on events that came through EventsHelper.getEventsSync()
+    var isContextual: Boolean
+        get() = flags and FLAG_IS_CONTEXTUAL != 0
+        set(isContextual) {
+            flags = flags.addBitIf(isContextual, FLAG_IS_CONTEXTUAL)
         }
 
     fun getTimeZoneString(): String {

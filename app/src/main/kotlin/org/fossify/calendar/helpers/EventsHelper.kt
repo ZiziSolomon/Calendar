@@ -518,6 +518,7 @@ class EventsHelper(val context: Context) {
             .toMutableList() as ArrayList<Event>
 
         val calendarColors = getCalendarColors()
+        val contextualEvaluator = ContextualRulesCache.getEvaluator(context)
 
         events.forEach {
             if (it.isTask()) {
@@ -525,6 +526,8 @@ class EventsHelper(val context: Context) {
             }
 
             it.updateIsPastEvent()
+            // after updateIsTaskCompleted(), which may overwrite flags with a stored copy
+            it.isContextual = contextualEvaluator.isContextual(it)
             val originalEvent = eventsDB.getEventWithId(it.id!!)
             if (originalEvent != null &&
                 (birthDayEventId != -1L && it.calendarId == birthDayEventId) or

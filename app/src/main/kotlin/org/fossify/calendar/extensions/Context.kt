@@ -70,6 +70,7 @@ import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.helpers.getPreviousAutoBackupTime
 import org.fossify.calendar.helpers.isWeekend
 import org.fossify.calendar.interfaces.CalendarsDao
+import org.fossify.calendar.interfaces.ContextualRulesDao
 import org.fossify.calendar.interfaces.EventsDao
 import org.fossify.calendar.interfaces.TasksDao
 import org.fossify.calendar.interfaces.WidgetsDao
@@ -138,6 +139,8 @@ val Context.widgetsDB: WidgetsDao
     get() = EventsDatabase.getInstance(applicationContext).WidgetsDao()
 val Context.completedTasksDB: TasksDao
     get() = EventsDatabase.getInstance(applicationContext).TasksDao()
+val Context.contextualRulesDB: ContextualRulesDao
+    get() = EventsDatabase.getInstance(applicationContext).ContextualRulesDao()
 val Context.eventsHelper: EventsHelper get() = EventsHelper(this)
 val Context.calDAVHelper: CalDAVHelper get() = CalDAVHelper(this)
 
