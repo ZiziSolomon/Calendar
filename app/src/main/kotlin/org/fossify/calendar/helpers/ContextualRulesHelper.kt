@@ -2,6 +2,7 @@ package org.fossify.calendar.helpers
 
 import android.content.Context
 import org.fossify.calendar.R
+import org.fossify.calendar.extensions.calendarsDB
 import org.fossify.calendar.extensions.contextualRulesDB
 import org.fossify.calendar.extensions.eventsDB
 import org.fossify.calendar.extensions.updateWidgets
@@ -23,6 +24,7 @@ class ContextualRulesHelper(val context: Context) {
 
     fun saveRule(rule: ContextualRule, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
+            rule.caldavCalendarId = withCalendarKey(rule).caldavCalendarId
             rule.id = dao.insertOrUpdate(rule)
             rulesChanged()
             callback?.invoke()
@@ -81,15 +83,31 @@ class ContextualRulesHelper(val context: Context) {
     }
 
     /**
-     * Points event marks back at their events' current local ids after a sync may have
-     * re-imported them (see ContextualRuleRepair). Call from a background thread.
+     * Points event marks and calendar-scoped rules back at the current local ids of their events
+     * and calendars after a sync may have re-imported them (see ContextualRuleRepair).
+     * Call from a background thread.
      */
-    fun repairEventKeys() {
-        val repaired = ContextualRuleRepair.rekey(dao.getRules()) { context.eventsDB.getEventIdWithImportId(it) }
-        if (repaired.isNotEmpty()) {
-            repaired.forEach { dao.insertOrUpdate(it) }
+    fun repairKeys() {
+        val eventRepairs = ContextualRuleRepair.rekey(dao.getRules()) { context.eventsDB.getEventIdWithImportId(it) }
+        eventRepairs.forEach { dao.insertOrUpdate(it) }
+
+        val calendarRepairs = ContextualRuleRepair.rekeyCalendars(
+            rules = dao.getRules(),
+            caldavIdOfCalendar = { context.calendarsDB.getCalendarWithId(it)?.caldavCalendarId },
+            calendarIdForCaldavId = { context.calendarsDB.getCalendarWithCalDAVCalendarId(it)?.id },
+        )
+        calendarRepairs.forEach { dao.insertOrUpdate(it) }
+
+        if (eventRepairs.isNotEmpty() || calendarRepairs.isNotEmpty()) {
             rulesChanged()
         }
+    }
+
+    // a rule scoped to a synced calendar carries that calendar's CalDAV id, so a later
+    // wipe-and-resync (new local calendar id) can be repaired
+    private fun withCalendarKey(rule: ContextualRule): ContextualRule {
+        val caldavId = rule.calendarId?.let { context.calendarsDB.getCalendarWithId(it)?.caldavCalendarId }
+        return rule.copy(caldavCalendarId = caldavId?.takeIf { it != 0 })
     }
 
     private fun seriesOf(eventId: Long) = context.eventsDB.getEventOrTaskWithId(eventId)?.let { event ->

@@ -25,5 +25,9 @@ data class ContextualRule(
     // a full wipe-and-resync where local ids get reassigned. Local-only events have no importId.
     @ColumnInfo(name = "event_id") var eventId: Long? = null,
     @ColumnInfo(name = "import_id") var importId: String? = null,
-    @ColumnInfo(name = "enabled") var enabled: Boolean = true
+    @ColumnInfo(name = "enabled") var enabled: Boolean = true,
+    // Repair key for calendarId, like importId for eventId: the Android calendar id of a synced
+    // calendar, which survives the calendar being re-imported under a new local id. Null for
+    // local calendars and for rules on every calendar. Added in DB v13.
+    @ColumnInfo(name = "caldav_calendar_id") var caldavCalendarId: Int? = null
 )

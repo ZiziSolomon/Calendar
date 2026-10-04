@@ -71,8 +71,8 @@ class CalDAVHelper(val context: Context) {
                 fetchCalDAVCalendarEvents(calendar, localCalendar.id!!, showToasts)
             }
 
-            // re-imported events get new local ids; keep "mark as contextual" pointing at them
-            ContextualRulesHelper(context).repairEventKeys()
+            // re-imported events and calendars get new local ids; keep rules pointing at them
+            ContextualRulesHelper(context).repairKeys()
 
             if (scheduleNextSync) {
                 context.scheduleCalDAVSync(true)

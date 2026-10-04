@@ -36,4 +36,22 @@ class EventsDatabaseMigrationTest {
         val v12 = createSqlByTable(12)
         assertEquals(v11, v12 - "contextual_rules")
     }
+
+    @Test
+    fun migration12to13GivesTheTableRoomExpects() {
+        // ALTER TABLE ADD COLUMN appends, so the v12 table plus the new column must equal what
+        // Room generated for v13; Room compares columns, but a drift here means a typo in the SQL
+        val expected = createSqlByTable(13)["contextual_rules"]
+        assertNotNull("contextual_rules missing from 13.json — rebuild to re-export", expected)
+        assertEquals("ALTER TABLE contextual_rules ADD COLUMN caldav_calendar_id INTEGER", EventsDatabase.ADD_RULE_CALDAV_CALENDAR_ID_SQL)
+        val afterAlter = EventsDatabase.CREATE_CONTEXTUAL_RULES_SQL.removeSuffix(")") + ", `caldav_calendar_id` INTEGER)"
+        assertEquals(expected, afterAlter)
+    }
+
+    @Test
+    fun version13OnlyChangesContextualRules() {
+        val v12 = createSqlByTable(12)
+        val v13 = createSqlByTable(13)
+        assertEquals(v12 - "contextual_rules", v13 - "contextual_rules")
+    }
 }

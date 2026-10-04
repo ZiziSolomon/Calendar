@@ -26,4 +26,33 @@ object ContextualRuleRepair {
             if (currentId == rule.eventId) null else rule.copy(eventId = currentId)
         }
     }
+
+    /**
+     * The same wipe-and-resync also deletes and recreates a synced calendar under a new local id,
+     * so a calendar-scoped rule would silently match nothing. Its repair key is the Android
+     * calendar id (CalDAVCalendar.id), which lives in the system calendar provider and survives.
+     *
+     * Returns the calendar-scoped rules that need saving: re-pointed at the local calendar that now
+     * carries their CalDAV id, or, for rules saved before the key existed, given that key from
+     * their current calendar. Rules on local calendars, and rules whose calendar isn't synced
+     * right now, are left alone.
+     */
+    fun rekeyCalendars(
+        rules: List<ContextualRule>,
+        caldavIdOfCalendar: (Long) -> Int?,
+        calendarIdForCaldavId: (Int) -> Long?,
+    ): List<ContextualRule> {
+        return rules.mapNotNull { rule ->
+            val calendarId = rule.calendarId ?: return@mapNotNull null
+            val caldavId = rule.caldavCalendarId
+            if (caldavId == null) {
+                // backfill; 0 is how CalendarEntity says "not synced"
+                val current = caldavIdOfCalendar(calendarId)?.takeIf { it != 0 } ?: return@mapNotNull null
+                rule.copy(caldavCalendarId = current)
+            } else {
+                val current = calendarIdForCaldavId(caldavId) ?: return@mapNotNull null
+                if (current == calendarId) null else rule.copy(calendarId = current)
+            }
+        }
+    }
 }
