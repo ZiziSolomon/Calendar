@@ -103,6 +103,19 @@ class ContextualRulesHelper(val context: Context) {
         }
     }
 
+    /**
+     * Drops marks on events, and rules on calendars, that the user has just deleted, so they
+     * don't linger as "Event (no longer exists)". Never call it for sync-driven removals (see
+     * ContextualRuleCleanup). Call from a background thread.
+     */
+    fun forgetDeleted(eventIds: Collection<Long> = emptyList(), calendarIds: Collection<Long> = emptyList()) {
+        val orphans = ContextualRuleCleanup.orphanedBy(dao.getRules(), eventIds, calendarIds)
+        if (orphans.isNotEmpty()) {
+            dao.deleteRules(orphans)
+            rulesChanged()
+        }
+    }
+
     /** The rules as one settings-export line (see ContextualRulesBackup). Call from a background thread. */
     fun exportForSettings(): String {
         return ContextualRulesBackup.encode(dao.getRules()) { context.calendarsDB.getCalendarWithId(it)?.title }

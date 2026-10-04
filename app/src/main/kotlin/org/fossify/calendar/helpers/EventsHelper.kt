@@ -132,6 +132,8 @@ class EventsHelper(val context: Context) {
         }
 
         calendarsDB.deleteCalendars(typesToDelete)
+        // only local calendars get here (synced ones are filtered out above), so this is always the user's doing
+        ContextualRulesHelper(context).forgetDeleted(calendarIds = deleteIds.filterNotNull())
 
         if (getCalendarsSync().size == 1) {
             config.quickFilterCalendars = HashSet()
@@ -354,6 +356,13 @@ class EventsHelper(val context: Context) {
                 eventsWithImportId.forEach {
                     context.calDAVHelper.deleteCalDAVEvent(it)
                 }
+            }
+
+            // deleteFromCalDAV means the user deleted these. Sync's own removals pass false, so marks
+            // survive a sync off/on; the one sync path passing true deletes edited occurrences, and marks
+            // are always kept on the series, never on those
+            if (deleteFromCalDAV) {
+                ContextualRulesHelper(context).forgetDeleted(eventIds = it)
             }
 
             deleteChildEvents(it as MutableList<Long>, deleteFromCalDAV, updateWidgets)
