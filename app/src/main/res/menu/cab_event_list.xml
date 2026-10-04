@@ -15,4 +15,9 @@
         android:id="@+id/cab_mark_contextual"
         android:title="@string/mark_as_contextual"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/cab_unmark_contextual"
+        android:title="@string/unmark_contextual"
+        android:visible="false"
+        app:showAsAction="never" />
 </menu>

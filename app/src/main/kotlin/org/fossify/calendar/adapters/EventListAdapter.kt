@@ -21,6 +21,7 @@ import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.MEDIUM_ALPHA
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.interfaces.RefreshRecyclerViewListener
@@ -43,6 +44,11 @@ class EventListAdapter(
     private var isPrintVersion = false
     private val mediumMargin = activity.resources.getDimension(org.fossify.commons.R.dimen.medium_margin).toInt()
 
+    // directly marked events among listItems, loaded off the UI thread so the selection menu can
+    // offer Unmark without a database read (until it loads, Mark is offered, which is harmless)
+    @Volatile
+    private var markedIds = emptySet<Long>()
+
     init {
         setupDragListener(true)
         val firstNonPastSectionIndex = listItems.indexOfFirst { it is ListSectionDay && !it.isPastSection }
@@ -51,17 +57,45 @@ class EventListAdapter(
                 recyclerView.scrollToPosition(firstNonPastSectionIndex)
             }
         }
+        loadMarks()
+    }
+
+    private fun loadMarks() {
+        if (!allowLongClick) {
+            return
+        }
+
+        val eventIds = listItems.filterIsInstance<ListEvent>().map { it.id }
+        ensureBackgroundThread {
+            markedIds = ContextualRulesHelper(activity).markedAmong(eventIds)
+        }
     }
 
     override fun getActionMenuId() = R.menu.cab_event_list
 
-    override fun prepareActionMode(menu: Menu) {}
+    override fun prepareActionMode(menu: Menu) {
+        val unmark = ContextualSelection.action(getSelectedEventIds(), markedIds) == ContextualSelection.Action.UNMARK
+        menu.findItem(R.id.cab_mark_contextual).isVisible = !unmark
+        menu.findItem(R.id.cab_unmark_contextual).isVisible = unmark
+    }
 
     override fun actionItemPressed(id: Int) {
         when (id) {
             R.id.cab_share -> shareEvents()
             R.id.cab_delete -> askConfirmDelete()
             R.id.cab_mark_contextual -> markSelectedContextual()
+            R.id.cab_unmark_contextual -> unmarkSelectedContextual()
+        }
+    }
+
+    private fun unmarkSelectedContextual() {
+        ContextualRulesHelper(activity).unmarkEvents(getSelectedEventIds()) {
+            activity.runOnUiThread {
+                activity.toast(R.string.unmarked_contextual)
+                finishActMode()
+                loadMarks()
+                listener?.refreshItems()
+            }
         }
     }
 
@@ -70,6 +104,7 @@ class EventListAdapter(
         ContextualRulesHelper(activity).markEvents(eventIds) {
             activity.runOnUiThread {
                 finishActMode()
+                loadMarks()
                 listener?.refreshItems()
             }
         }
@@ -130,6 +165,7 @@ class EventListAdapter(
             recyclerView.resetItemCount()
             notifyDataSetChanged()
             finishActMode()
+            loadMarks()
         }
     }
 

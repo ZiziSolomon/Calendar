@@ -77,6 +77,20 @@ class ContextualRulesHelper(val context: Context) {
         }
     }
 
+    fun unmarkEvents(eventIds: Collection<Long>, callback: (() -> Unit)? = null) {
+        ensureBackgroundThread {
+            eventIds.map { seriesOf(it)?.id ?: it }.distinct().forEach { dao.deleteRules(dao.getRulesForEventId(it)) }
+            rulesChanged()
+            callback?.invoke()
+        }
+    }
+
+    /** Of [eventIds], those directly marked (themselves or through their series). Call from a background thread. */
+    fun markedAmong(eventIds: Collection<Long>): Set<Long> {
+        val markedSeries = dao.getRules().filter { it.enabled && it.matchType == MATCH_EVENT_ID }.mapNotNull { it.eventId }.toSet()
+        return ContextualSelection.markedAmong(eventIds, markedSeries) { seriesOf(it)?.id ?: it }
+    }
+
     /** Whether the event (or its series) has an enabled direct mark. Call from a background thread. */
     fun isEventMarked(eventId: Long): Boolean {
         val seriesId = seriesOf(eventId)?.id ?: eventId
