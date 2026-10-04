@@ -619,10 +619,11 @@ class WeekFragment : Fragment(), WeeklyCalendar {
 
         // contextual events become background stripes and must never reach the collision
         // packing below, or they'd shove real events sideways (docs/CONTEXTUAL_EVENTS.md §3.11)
+        // partitioned out even when hidden, so hiding them never brings back the clutter
         val (contextualEvents, events) = allEvents.partition { it.isContextual }
         binding.weekContextualStripes.setStripes(
             ContextualStripeBuilder.build(
-                events = contextualEvents,
+                events = if (config.showContextualEvents) contextualEvents else emptyList(),
                 firstDay = weekDateTime.toLocalDate(),
                 daysCount = config.weeklyViewDays,
                 fallbackColor = primaryColor

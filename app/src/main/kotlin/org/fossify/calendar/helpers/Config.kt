@@ -168,6 +168,11 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(DIM_PAST_EVENTS, true)
         set(dimPastEvents) = prefs.edit().putBoolean(DIM_PAST_EVENTS, dimPastEvents).apply()
 
+    // off hides contextual events from week and day views; list view and search still show them
+    var showContextualEvents: Boolean
+        get() = prefs.getBoolean(SHOW_CONTEXTUAL_EVENTS, true)
+        set(showContextualEvents) = prefs.edit().putBoolean(SHOW_CONTEXTUAL_EVENTS, showContextualEvents).apply()
+
     var dimCompletedTasks: Boolean
         get() = prefs.getBoolean(DIM_COMPLETED_TASKS, true)
         set(dimCompletedTasks) = prefs.edit().putBoolean(DIM_COMPLETED_TASKS, dimCompletedTasks)

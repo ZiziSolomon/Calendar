@@ -220,6 +220,7 @@ class SettingsActivity : SimpleActivity() {
         setupCustomizeWidgetColors()
         setupViewToOpenFromListWidget()
         setupDimEvents()
+        setupShowContextualEvents()
         setupDimCompletedTasks()
         setupAllowChangingTimeZones()
         updateTextColors(binding.settingsHolder)
@@ -898,6 +899,14 @@ class SettingsActivity : SimpleActivity() {
         settingsDimPastEventsHolder.setOnClickListener {
             settingsDimPastEvents.toggle()
             config.dimPastEvents = settingsDimPastEvents.isChecked
+        }
+    }
+
+    private fun setupShowContextualEvents() = binding.apply {
+        settingsShowContextualEvents.isChecked = config.showContextualEvents
+        settingsShowContextualEventsHolder.setOnClickListener {
+            settingsShowContextualEvents.toggle()
+            config.showContextualEvents = settingsShowContextualEvents.isChecked
         }
     }
 
