@@ -33,6 +33,7 @@ import org.fossify.calendar.adapters.AutoCompleteTextViewAdapter
 import org.fossify.calendar.databinding.ActivityEventBinding
 import org.fossify.calendar.databinding.ItemAttendeeBinding
 import org.fossify.calendar.dialogs.DeleteEventDialog
+import org.fossify.calendar.dialogs.EditContextualRuleDialog
 import org.fossify.calendar.dialogs.EditRepeatingEventDialog
 import org.fossify.calendar.dialogs.ReminderWarningDialog
 import org.fossify.calendar.dialogs.RepeatLimitTypePickerDialog
@@ -62,6 +63,7 @@ import org.fossify.calendar.helpers.CALENDAR_ID
 import org.fossify.calendar.helpers.CLASS
 import org.fossify.calendar.helpers.CURRENT_TIME_ZONE
 import org.fossify.calendar.helpers.ContextualReminderPolicy
+import org.fossify.calendar.helpers.ContextualRuleText
 import org.fossify.calendar.helpers.ContextualRulesCache
 import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.DELETE_ALL_OCCURRENCES
@@ -593,6 +595,7 @@ class EventActivity : SimpleActivity() {
                     isVisible = mEvent.id != null
                     setTitle(if (mIsMarkedContextual) R.string.unmark_contextual else R.string.mark_as_contextual)
                 }
+                findItem(R.id.contextual_rule_from_title).isVisible = mEvent.id != null && mEvent.title.isNotBlank()
             }
         }
     }
@@ -612,6 +615,15 @@ class EventActivity : SimpleActivity() {
                     beVisibleIf(reason != null)
                 }
             }
+        }
+    }
+
+    // mEvent is the saved event, like the reason line: the rule matches what's stored, not unsaved typing
+    private fun makeRuleFromTitle() {
+        val template = ContextualRuleText.ruleFromTitle(mEvent.title, mEvent.calendarId) ?: return
+        EditContextualRuleDialog(this, original = null, template = template) {
+            toast(R.string.contextual_rule_saved)
+            loadContextualMark()
         }
     }
 
@@ -641,6 +653,7 @@ class EventActivity : SimpleActivity() {
                 R.id.duplicate -> duplicateEvent()
                 R.id.share -> shareEvent()
                 R.id.toggle_contextual -> toggleContextualMark()
+                R.id.contextual_rule_from_title -> makeRuleFromTitle()
                 else -> return@setOnMenuItemClickListener false
             }
             return@setOnMenuItemClickListener true

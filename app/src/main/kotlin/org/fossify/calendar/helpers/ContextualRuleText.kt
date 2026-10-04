@@ -1,5 +1,7 @@
 package org.fossify.calendar.helpers
 
+import org.fossify.calendar.models.ContextualRule
+
 /**
  * Pure conversions behind the rules UI, kept apart from Android so they can be unit tested.
  * MATCH_DURATION_OVER stores minutes in `pattern`; the editor talks to people in hours.
@@ -23,6 +25,18 @@ object ContextualRuleText {
         } else {
             (minutes / MINUTES_PER_HOUR.toDouble()).toString()
         }
+    }
+
+    /**
+     * The editor's starting point for "Make a rule from this title": *title contains* the event's
+     * title, limited to its calendar. Limiting is the cautious default, since a common word
+     * ("Call") would otherwise sweep up every calendar; the user can widen it in the editor,
+     * where the live preview shows the reach. Null when there's no title to match.
+     */
+    fun ruleFromTitle(title: String, calendarId: Long?): ContextualRule? {
+        // inner runs of whitespace are kept: "contains" matches them literally
+        val pattern = title.trim()
+        return if (pattern.isEmpty()) null else ContextualRule(id = null, calendarId = calendarId, matchType = MATCH_TITLE_CONTAINS, pattern = pattern)
     }
 
     enum class Unit { DAYS, HOURS, MINUTES }

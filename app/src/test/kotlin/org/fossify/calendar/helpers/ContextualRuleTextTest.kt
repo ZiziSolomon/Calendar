@@ -37,4 +37,29 @@ class ContextualRuleTextTest {
         assertEquals(Pair(90L, Unit.MINUTES), ContextualRuleText.durationParts(90))
         assertEquals(Pair(0L, Unit.MINUTES), ContextualRuleText.durationParts(0))
     }
+
+    @Test
+    fun ruleFromTitleIsTitleContainsLimitedToTheCalendar() {
+        val rule = ContextualRuleText.ruleFromTitle("  On call ", 3L)!!
+        assertEquals(MATCH_TITLE_CONTAINS, rule.matchType)
+        assertEquals("On call", rule.pattern)
+        assertEquals(3L, rule.calendarId)
+        assertNull(rule.id)
+        assertEquals(true, rule.enabled)
+    }
+
+    @Test
+    fun ruleFromTitleMatchesTheEventItCameFrom() {
+        val event = org.fossify.calendar.models.Event(id = 1L, title = "Kids weekend (Dad's)", calendarId = 2L)
+        val rule = ContextualRuleText.ruleFromTitle(event.title, event.calendarId)!!
+        // regex metacharacters are harmless: "contains" is a plain substring match
+        assertEquals(true, ContextualRuleEvaluator(listOf(rule)).isContextual(event))
+        assertEquals(false, ContextualRuleEvaluator(listOf(rule)).isContextual(event.copy(calendarId = 5L)))
+    }
+
+    @Test
+    fun blankTitlesGiveNoRule() {
+        assertNull(ContextualRuleText.ruleFromTitle("", 1L))
+        assertNull(ContextualRuleText.ruleFromTitle("   ", 1L))
+    }
 }

@@ -370,6 +370,8 @@
     </plurals>
     <string name="contextual_rule_usage_none">Matches no events</string>
     <string name="contextual_list_tag">Context</string>
+    <string name="contextual_rule_from_title">Make a rule from this title</string>
+    <string name="contextual_rule_saved">Rule saved</string>
     <string name="mark_as_contextual">Mark as contextual</string>
     <string name="unmark_contextual">Unmark as contextual</string>
     <string name="marked_contextual">Marked as contextual. It will show as background context.</string>

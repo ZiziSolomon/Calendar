@@ -43,11 +43,14 @@ class EditContextualRuleDialog(
     val activity: SimpleActivity,
     original: ContextualRule?,
     defaultCalendarId: Long? = null,
+    // a prefilled *new* rule (e.g. from an event's title); ignored when editing [original]
+    template: ContextualRule? = null,
     val callback: () -> Unit
 ) {
     private val isNewRule = original == null
     // edit a copy, so cancelling leaves the list's rule untouched
-    private val rule = original?.copy() ?: ContextualRule(id = null, calendarId = defaultCalendarId, matchType = MATCH_TITLE_CONTAINS)
+    private val rule = original?.copy() ?: template?.copy(id = null)
+        ?: ContextualRule(id = null, calendarId = defaultCalendarId, matchType = MATCH_TITLE_CONTAINS)
     private val binding by activity.viewBinding(DialogContextualRuleBinding::inflate)
     private var calendars = ArrayList<CalendarEntity>()
 
