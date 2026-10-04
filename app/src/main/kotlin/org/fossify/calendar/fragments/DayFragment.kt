@@ -113,7 +113,11 @@ class DayFragment : Fragment() {
         if (activity == null)
             return
 
-        DayEventsAdapter(activity as SimpleActivity, events, binding.dayEvents, mDayCode) {
+        // contextual events go in the band under the header, not the list (§2)
+        val (contextualEvents, regularEvents) = events.partition { it.isContextual }
+        binding.dayContextBand.setEvents(contextualEvents) { editEvent(it) }
+
+        DayEventsAdapter(activity as SimpleActivity, ArrayList(regularEvents), binding.dayEvents, mDayCode) {
             editEvent(it as Event)
         }.apply {
             binding.dayEvents.adapter = this
