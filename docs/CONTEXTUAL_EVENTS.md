@@ -264,7 +264,7 @@ context band, month view untouched.
 | Rules UI is more work than the rendering          | Medium     | The preview (§1.5) is easy to underestimate.                                                                  |
 | Upstream rebase pain                              | Low-Medium | New table + new view keeps most of the diff out of hot files.                                                 |
 | Room migration wrong                              | Low        | Ten worked examples in the same file.                                                                         |
-| Orphan rules after event deletion                 | Low        | Cosmetic for personal use.                                                                                    |
+| Orphan rules after event deletion                 | Low        | Cosmetic for personal use. **Resolved in 9.2** (§8).                                                          |
 | GPL-3.0 obligations                               | n/a        | Personal use, no distribution, nothing triggers. Relevant only if you ever share the APK.                     |
 
 ---
@@ -330,3 +330,56 @@ It is self-contained — no conversation context required.
 - **No `saveLayer` for stripes** (§3.12 still holds): each stripe is drawn
   translucent, with the stripes above it clipped out. The full-height offscreen
   layer doubled janky frames during week swipes.
+
+### Phases 9–13 (worker-written, 4–5 Oct 2026)
+
+These go past the plan's Phase 6 scope. All are pure-logic-first with JVM tests;
+there is no DB change after v13.
+
+- **Settings export/import carries contexts (9.1).** Keys `show_contextual_events`,
+  `label_contextual_stripes`, `mute_contextual_reminders` and `contextual_rules` (one
+  JSON array; `ContextualRulesBackup`, with the serialised type in
+  `models/ContextualRuleBackupEntry` so R8 keeps its field names). Import *merges*:
+  calendar rules bind by CalDAV calendar id, then by calendar name; marks bind by
+  `import_id`. A rule that can't bind is skipped and counted, never widened (a
+  calendar rule without its calendar would otherwise match every calendar).
+  Limitation: provider ids are per-phone, so marks on synced events don't move to a
+  new phone.
+- **Orphan cleanup on user deletion (9.2, resolves the risk-register row).** The hook
+  keys on `deleteFromCalDAV = true` in `EventsHelper.deleteEvents` (user deletes) and
+  on local-calendar deletion in `deleteCalendars`. Sync removals pass `false`, so
+  wipe-and-resync still keeps marks. If upstream ever passes `true` from a sync path
+  for whole events, marks would be lost there (commented at the call).
+- **Week-view labels are tap targets (9.3)** that open the event; the rest of the
+  stripe keeps the grid's tap-to-create.
+- **"Why is this contextual?" (10.1).** The event screen names the matching rules
+  (`ContextualRuleEvaluator.matchingRules`), so a rule-matched event no longer offers
+  a misleading "Mark as contextual" with no explanation.
+- **Mute reminders for contextual events (10.2)**, default off. Skipped at fire time
+  in `NotificationReceiver` (`ContextualReminderPolicy`) while the next reminder is
+  still scheduled, so turning it off works immediately.
+- **.ics carries marks (10.3).** `X-FOSSIFY-CONTEXTUAL:TRUE` on directly marked
+  events; import re-creates the mark without duplicates (`IcsContextualMark`). Other
+  apps ignore unknown `X-` properties (RFC 5545 §3.8.8.2).
+- **Lists say "Context" (11.1).** List view, search and the month day list append
+  " · Context" to contextual rows rather than changing colour or alpha, which
+  upstream already uses for past events and tasks.
+- **Rules show their reach (11.2, 12.2).** Each rule shows "Matches N events" or
+  "Matches no events" over a month back to a year ahead, with a series counted once
+  (`ContextualRuleUsage`). Long-press → "Show matches" lists those same events and
+  opens one; the dialog title names the calendar (13.2).
+- **Quick toggle (11.3):** the main overflow menu's "Show contextual events" is bound
+  to the same setting.
+- **Rule from an event's title (12.1):** opens the editor prefilled with *Title
+  contains* scoped to the event's calendar, so the live preview shows the reach
+  before saving.
+- **Unmark from lists (12.3):** the selection menu offers "Unmark" when every
+  selected event is directly marked (`ContextualSelection`). Day view is excluded by
+  design, since contextual events never enter its list.
+- **Upstream rebase (10.4 dry run):** one conflict, in `EventsHelper.deleteCalendars`
+  (upstream wrapped it in `synchronized(HolidayHelper.lock)`). Fix: move our
+  `forgetDeleted(calendarIds = …)` call to just after
+  `calendarsDB.deleteCalendars(typesToDelete)`. Upstream's DB was still v11.
+- **Lint (13.1):** 0 errors. The remaining warnings in branch files follow upstream's
+  own patterns (MissingTranslation, which Weblate fills; UseKtx; Overdraw;
+  AlwaysShowAction on the selection-bar Delete).
