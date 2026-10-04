@@ -165,6 +165,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         binding = FragmentWeekBinding.inflate(inflater, container, false).apply {
             scrollView = weekEventsScrollview
             weekHorizontalGridHolder.layoutParams.height = fullHeight
+            weekContextualStripes.layoutParams.height = fullHeight
             weekEventsColumnsHolder.layoutParams.height = fullHeight
 
             scaleDetector = getViewScaleDetector()
@@ -607,6 +608,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         val fullHeight = max(rowHeight.toInt() * 24, scrollView.height + oneDp)
         scrollView.layoutParams.height = fullHeight - oneDp
         binding.weekHorizontalGridHolder.layoutParams.height = fullHeight
+        binding.weekContextualStripes.layoutParams.height = fullHeight
         binding.weekEventsColumnsHolder.layoutParams.height = fullHeight
         addEvents(currEvents)
     }

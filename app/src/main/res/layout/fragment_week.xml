@@ -48,6 +48,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
+            <!-- above the grid lines, below the event columns -->
+            <org.fossify.calendar.views.ContextualStripeView
+                android:id="@+id/week_contextual_stripes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <LinearLayout
                 android:id="@+id/week_events_columns_holder"
                 android:layout_width="match_parent"
