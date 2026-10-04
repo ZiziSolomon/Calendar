@@ -188,7 +188,8 @@ class EventListWidgetAdapter(val context: Context, val intent: Intent) : RemoteV
         context.eventsHelper.getEventsSync(fromTS, toTS, applyTypeFilter = true) {
             val listItems = ArrayList<ListItem>(it.size)
             val replaceDescription = context.config.replaceDescription
-            val sorted = it.sortedWith(compareBy<Event> { event ->
+            // a widget is a glance at commitments; background context would just crowd it (§3.18)
+            val sorted = it.filterNot { event -> event.isContextual }.sortedWith(compareBy<Event> { event ->
                 if (event.getIsAllDay()) {
                     Formatter.getDayStartTS(Formatter.getDayCodeFromTS(event.startTS)) - 1
                 } else {
