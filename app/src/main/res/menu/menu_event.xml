@@ -21,4 +21,8 @@
         android:icon="@drawable/ic_share_vector"
         android:title="@string/share"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/toggle_contextual"
+        android:title="@string/mark_as_contextual"
+        app:showAsAction="never" />
 </menu>

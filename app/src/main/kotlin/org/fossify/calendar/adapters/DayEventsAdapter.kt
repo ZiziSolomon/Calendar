@@ -5,10 +5,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.widget.ConstraintLayout
 import org.fossify.calendar.R
+import org.fossify.calendar.activities.MainActivity
 import org.fossify.calendar.activities.SimpleActivity
 import org.fossify.calendar.databinding.EventListItemBinding
 import org.fossify.calendar.dialogs.DeleteEventDialog
 import org.fossify.calendar.extensions.*
+import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.Formatter
 import org.fossify.calendar.models.Event
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
@@ -43,6 +45,18 @@ class DayEventsAdapter(activity: SimpleActivity, val events: ArrayList<Event>, r
         when (id) {
             R.id.cab_share -> shareEvents()
             R.id.cab_delete -> askConfirmDelete()
+            R.id.cab_mark_contextual -> markSelectedContextual()
+        }
+    }
+
+    private fun markSelectedContextual() {
+        val eventIds = events.filter { selectedKeys.contains(it.id?.toInt()) }.mapNotNull { it.id }
+        ContextualRulesHelper(activity).markEvents(eventIds) {
+            activity.runOnUiThread {
+                finishActMode()
+                // refetch everything, so they move from this list into the band (and week stripes)
+                (activity as? MainActivity)?.refreshItems()
+            }
         }
     }
 

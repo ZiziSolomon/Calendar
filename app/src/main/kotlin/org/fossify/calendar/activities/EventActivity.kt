@@ -61,6 +61,7 @@ import org.fossify.calendar.helpers.CALDAV
 import org.fossify.calendar.helpers.CALENDAR_ID
 import org.fossify.calendar.helpers.CLASS
 import org.fossify.calendar.helpers.CURRENT_TIME_ZONE
+import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.DELETE_ALL_OCCURRENCES
 import org.fossify.calendar.helpers.DELETE_FUTURE_OCCURRENCES
 import org.fossify.calendar.helpers.DELETE_SELECTED_OCCURRENCE
@@ -175,6 +176,7 @@ class EventActivity : SimpleActivity() {
     private val SELECT_TIME_ZONE_INTENT = 1
 
     private var mIsAllDayEvent = false
+    private var mIsMarkedContextual = false
     private var mReminder1Minutes = REMINDER_OFF
     private var mReminder2Minutes = REMINDER_OFF
     private var mReminder3Minutes = REMINDER_OFF
@@ -575,6 +577,7 @@ class EventActivity : SimpleActivity() {
         updateTextColors(eventNestedScrollview)
         updateIconColors()
         refreshMenuItems()
+        loadContextualMark()
         showOrHideTimeZone()
     }
 
@@ -584,8 +587,38 @@ class EventActivity : SimpleActivity() {
                 findItem(R.id.delete).isVisible = mEvent.id != null
                 findItem(R.id.share).isVisible = mEvent.id != null
                 findItem(R.id.duplicate).isVisible = mEvent.id != null
+                findItem(R.id.toggle_contextual).apply {
+                    isVisible = mEvent.id != null
+                    setTitle(if (mIsMarkedContextual) R.string.unmark_contextual else R.string.mark_as_contextual)
+                }
             }
         }
+    }
+
+    private fun loadContextualMark() {
+        val eventId = mEvent.id ?: return
+        ensureBackgroundThread {
+            val isMarked = ContextualRulesHelper(this).isEventMarked(eventId)
+            runOnUiThread {
+                mIsMarkedContextual = isMarked
+                refreshMenuItems()
+            }
+        }
+    }
+
+    private fun toggleContextualMark() {
+        val eventId = mEvent.id ?: return
+        val helper = ContextualRulesHelper(this)
+        val wasMarked = mIsMarkedContextual
+        val done = {
+            runOnUiThread {
+                mIsMarkedContextual = !wasMarked
+                refreshMenuItems()
+                toast(if (wasMarked) R.string.unmarked_contextual else R.string.marked_contextual)
+            }
+        }
+
+        if (wasMarked) helper.unmarkEvent(eventId, done) else helper.markEvents(listOf(eventId), done)
     }
 
     private fun setupOptionsMenu() {
@@ -599,6 +632,7 @@ class EventActivity : SimpleActivity() {
                 R.id.delete -> deleteEvent()
                 R.id.duplicate -> duplicateEvent()
                 R.id.share -> shareEvent()
+                R.id.toggle_contextual -> toggleContextualMark()
                 else -> return@setOnMenuItemClickListener false
             }
             return@setOnMenuItemClickListener true

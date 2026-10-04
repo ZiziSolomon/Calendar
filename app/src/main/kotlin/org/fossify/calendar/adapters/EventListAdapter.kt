@@ -60,6 +60,17 @@ class EventListAdapter(
         when (id) {
             R.id.cab_share -> shareEvents()
             R.id.cab_delete -> askConfirmDelete()
+            R.id.cab_mark_contextual -> markSelectedContextual()
+        }
+    }
+
+    private fun markSelectedContextual() {
+        val eventIds = listItems.filter { it is ListEvent && selectedKeys.contains(it.hashCode()) }.map { (it as ListEvent).id }
+        ContextualRulesHelper(activity).markEvents(eventIds) {
+            activity.runOnUiThread {
+                finishActMode()
+                listener?.refreshItems()
+            }
         }
     }
 

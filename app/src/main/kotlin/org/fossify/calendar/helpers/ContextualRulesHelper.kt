@@ -37,6 +37,53 @@ class ContextualRulesHelper(val context: Context) {
         }
     }
 
+    /**
+     * Marks each event contextual with a MATCH_EVENT_ID rule. An edited occurrence of a repeating
+     * event is stored as a child row, so marks go on its series (whole-series marking, §4 #3).
+     */
+    fun markEvents(eventIds: Collection<Long>, callback: (() -> Unit)? = null) {
+        ensureBackgroundThread {
+            for (eventId in eventIds) {
+                val series = seriesOf(eventId) ?: continue
+                val existing = dao.getRulesForEventId(series.id!!)
+                if (existing.isEmpty()) {
+                    dao.insertOrUpdate(
+                        ContextualRule(
+                            id = null,
+                            matchType = MATCH_EVENT_ID,
+                            eventId = series.id,
+                            importId = series.importId.ifEmpty { null }
+                        )
+                    )
+                } else {
+                    existing.filterNot { it.enabled }.forEach { dao.insertOrUpdate(it.copy(enabled = true)) }
+                }
+            }
+            rulesChanged()
+            callback?.invoke()
+        }
+    }
+
+    /** Removes direct marks only; the event can still be contextual through other rules. */
+    fun unmarkEvent(eventId: Long, callback: (() -> Unit)? = null) {
+        ensureBackgroundThread {
+            val seriesId = seriesOf(eventId)?.id ?: eventId
+            dao.deleteRules(dao.getRulesForEventId(seriesId))
+            rulesChanged()
+            callback?.invoke()
+        }
+    }
+
+    /** Whether the event (or its series) has an enabled direct mark. Call from a background thread. */
+    fun isEventMarked(eventId: Long): Boolean {
+        val seriesId = seriesOf(eventId)?.id ?: eventId
+        return dao.getRulesForEventId(seriesId).any { it.enabled }
+    }
+
+    private fun seriesOf(eventId: Long) = context.eventsDB.getEventOrTaskWithId(eventId)?.let { event ->
+        if (event.parentId != 0L) context.eventsDB.getEventOrTaskWithId(event.parentId) ?: event else event
+    }
+
     private fun rulesChanged() {
         ContextualRulesCache.invalidate()
         context.updateWidgets()

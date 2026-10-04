@@ -11,4 +11,8 @@
         android:icon="@drawable/ic_delete_vector"
         android:title="@string/delete"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/cab_mark_contextual"
+        android:title="@string/mark_as_contextual"
+        app:showAsAction="never" />
 </menu>
