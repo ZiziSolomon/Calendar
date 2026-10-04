@@ -234,4 +234,46 @@ class ContextualRuleEvaluatorTest {
         assertEquals(1440L, evaluator.durationMinutes(allDay(2026, 10, 25, 25)))
         assertEquals(4320L, evaluator.durationMinutes(allDay(2026, 10, 2, 4)))
     }
+
+    // --- matchingRules: the event screen's "why is this contextual?" line ---
+
+    @Test
+    fun matchingRulesListsEveryMatchInRuleOrder() {
+        val title = ContextualRule(id = 1L, matchType = MATCH_TITLE_CONTAINS, pattern = "call")
+        val other = ContextualRule(id = 2L, matchType = MATCH_TITLE_CONTAINS, pattern = "gym")
+        val mark = ContextualRule(id = 3L, matchType = MATCH_EVENT_ID, eventId = 100L)
+        val event = timed(0, 60, title = "On call")
+        assertEquals(listOf(title, mark), evaluator(title, other, mark).matchingRules(event))
+    }
+
+    @Test
+    fun matchingRulesIsEmptyExactlyWhenNotContextual() {
+        val evaluator = evaluator(
+            ContextualRule(id = 1L, matchType = MATCH_TITLE_CONTAINS, pattern = "call"),
+            ContextualRule(id = 2L, matchType = MATCH_ALL, calendarId = 7L)
+        )
+        val events = listOf(
+            timed(0, 60, title = "On call"),
+            timed(0, 60, title = "Dentist"),
+            timed(0, 60, title = "Dentist", calendarId = 7L)
+        )
+        events.forEach { assertEquals(evaluator.isContextual(it), evaluator.matchingRules(it).isNotEmpty()) }
+        assertTrue(evaluator.matchingRules(events[1]).isEmpty())
+    }
+
+    @Test
+    fun matchingRulesSkipsDisabledAndBrokenRules() {
+        val event = timed(0, 60, title = "On call")
+        val disabled = ContextualRule(id = 1L, matchType = MATCH_TITLE_CONTAINS, pattern = "call", enabled = false)
+        val broken = ContextualRule(id = 2L, matchType = MATCH_TITLE_REGEX, pattern = "([")
+        val risky = ContextualRule(id = 3L, matchType = MATCH_TITLE_REGEX, pattern = "(call|calls)+")
+        assertTrue(evaluator(disabled, broken, risky).matchingRules(event).isEmpty())
+    }
+
+    @Test
+    fun matchingRulesRespectsCalendarScope() {
+        val scoped = ContextualRule(id = 1L, matchType = MATCH_TITLE_CONTAINS, pattern = "call", calendarId = 2L)
+        assertTrue(evaluator(scoped).matchingRules(timed(0, 60, title = "On call", calendarId = 1L)).isEmpty())
+        assertEquals(listOf(scoped), evaluator(scoped).matchingRules(timed(0, 60, title = "On call", calendarId = 2L)))
+    }
 }

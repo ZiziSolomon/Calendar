@@ -32,6 +32,9 @@ class ContextualRuleEvaluator(
 
     fun isContextual(event: Event) = !isEmpty && enabledRules.any { matches(it, event) }
 
+    /** Every enabled rule that makes [event] contextual, in rule order. For explaining, not for hot paths. */
+    fun matchingRules(event: Event): List<ContextualRule> = enabledRules.filter { matches(it, event) }
+
     private fun matches(rule: ContextualRule, event: Event): Boolean {
         if (rule.calendarId != null && rule.calendarId != event.calendarId) {
             return false

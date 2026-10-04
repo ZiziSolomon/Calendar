@@ -598,10 +598,17 @@ class EventActivity : SimpleActivity() {
     private fun loadContextualMark() {
         val eventId = mEvent.id ?: return
         ensureBackgroundThread {
-            val isMarked = ContextualRulesHelper(this).isEventMarked(eventId)
+            val helper = ContextualRulesHelper(this)
+            val isMarked = helper.isEventMarked(eventId)
+            // the saved row, not mEvent: the reason should describe what views show, not unsaved edits
+            val reason = eventsDB.getEventWithId(eventId)?.let { helper.explain(it) }
             runOnUiThread {
                 mIsMarkedContextual = isMarked
                 refreshMenuItems()
+                binding.eventContextualReason.apply {
+                    text = reason
+                    beVisibleIf(reason != null)
+                }
             }
         }
     }
@@ -612,9 +619,8 @@ class EventActivity : SimpleActivity() {
         val wasMarked = mIsMarkedContextual
         val done = {
             runOnUiThread {
-                mIsMarkedContextual = !wasMarked
-                refreshMenuItems()
                 toast(if (wasMarked) R.string.unmarked_contextual else R.string.marked_contextual)
+                loadContextualMark()
             }
         }
 

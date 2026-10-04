@@ -366,6 +366,9 @@
     <string name="unmark_contextual">Unmark as contextual</string>
     <string name="marked_contextual">Marked as contextual. It will show as background context.</string>
     <string name="unmarked_contextual">No longer marked as contextual</string>
+    <string name="contextual_reason">Contextual: %s</string>
+    <string name="contextual_reason_marked">Marked directly</string>
+    <string name="contextual_reason_in_calendar">%1$s in %2$s</string>
     <!-- spoken by TalkBack on a week-view day header; %1$s is the day ("Mon 5"), %2$s the contexts -->
     <string name="contextual_a11y_day">%1$s. Context: %2$s</string>
     <string name="contextual_a11y_all_day">%s, all day</string>

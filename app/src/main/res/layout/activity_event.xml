@@ -49,11 +49,26 @@
                 android:textCursorDrawable="@null"
                 android:textSize="@dimen/day_text_size" />
 
+            <!-- why this event is contextual; shown only when a rule matches it -->
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/event_contextual_reason"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/event_title"
+                android:layout_marginStart="@dimen/activity_margin"
+                android:layout_marginTop="@dimen/medium_margin"
+                android:layout_marginEnd="@dimen/activity_margin"
+                android:alpha="0.7"
+                android:textSize="@dimen/normal_text_size"
+                android:visibility="gone"
+                tools:text="Contextual: title contains “on call”"
+                tools:visibility="visible" />
+
             <org.fossify.commons.views.MyAutoCompleteTextView
                 android:id="@+id/event_location"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/event_title"
+                android:layout_below="@+id/event_contextual_reason"
                 android:layout_marginStart="@dimen/activity_margin"
                 android:layout_marginTop="@dimen/activity_margin"
                 android:layout_toStartOf="@+id/event_show_on_map"

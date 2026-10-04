@@ -7,6 +7,7 @@ import org.fossify.calendar.extensions.contextualRulesDB
 import org.fossify.calendar.extensions.eventsDB
 import org.fossify.calendar.extensions.updateWidgets
 import org.fossify.calendar.models.ContextualRule
+import org.fossify.calendar.models.Event
 import org.fossify.commons.helpers.ensureBackgroundThread
 
 /**
@@ -155,6 +156,27 @@ class ContextualRulesHelper(val context: Context) {
     private fun rulesChanged() {
         ContextualRulesCache.invalidate()
         context.updateWidgets()
+    }
+
+    /**
+     * Why [event] is contextual, as one line for the event screen ("Contextual: title contains
+     * “on call”; marked directly"), or null if no enabled rule matches. Reads the saved event,
+     * so unsaved edits on screen don't change the answer. Call from a background thread.
+     */
+    fun explain(event: Event): String? {
+        val rules = ContextualRuleEvaluator(dao.getEnabledRules()).matchingRules(event)
+        if (rules.isEmpty()) {
+            return null
+        }
+
+        val res = context.resources
+        val reasons = rules.map { rule ->
+            // "Event: <this event's own title>" would be circular on its own screen
+            val reason = if (rule.matchType == MATCH_EVENT_ID) res.getString(R.string.contextual_reason_marked) else describe(rule)
+            val calendar = rule.calendarId?.let { context.calendarsDB.getCalendarWithId(it)?.title }
+            if (calendar == null) reason else res.getString(R.string.contextual_reason_in_calendar, reason, calendar)
+        }.distinct()
+        return res.getString(R.string.contextual_reason, reasons.joinToString("; "))
     }
 
     /** One-line summary for the rules list. Call from a background thread (may read an event). */
