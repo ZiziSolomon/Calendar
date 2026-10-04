@@ -95,7 +95,9 @@ class ContextualRuleEvaluator(
         }
 
         private fun compileOrNull(pattern: String): Regex? {
-            if (pattern.isBlank()) {
+            // risky patterns never run here, even if saved before RegexRisk existed: this is the
+            // event fetch path, and a runaway match can't be interrupted on Android
+            if (pattern.isBlank() || RegexRisk.check(pattern) != null) {
                 return null
             }
 

@@ -141,6 +141,13 @@ class ContextualRuleEvaluatorTest {
     }
 
     @Test
+    fun riskyRegexNeverRunsEvenIfAlreadySaved() {
+        // would match, but (shift|shifts)+ is a quantified alternation that RegexRisk refuses
+        val evaluator = evaluator(ContextualRule(id = 1L, matchType = MATCH_TITLE_REGEX, pattern = "(shift|shifts)+"))
+        assertFalse(evaluator.isContextual(timed(0, 60, title = "Night shift")))
+    }
+
+    @Test
     fun regexErrorExplainsBadPatternsOnly() {
         assertNotNull(ContextualRuleEvaluator.regexError("(["))
         assertNull(ContextualRuleEvaluator.regexError("^Ctx:"))

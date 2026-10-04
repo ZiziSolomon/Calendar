@@ -18,6 +18,7 @@ import org.fossify.calendar.helpers.MATCH_DURATION_OVER
 import org.fossify.calendar.helpers.MATCH_EVENT_ID
 import org.fossify.calendar.helpers.MATCH_TITLE_CONTAINS
 import org.fossify.calendar.helpers.MATCH_TITLE_REGEX
+import org.fossify.calendar.helpers.RegexRisk
 import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.CalendarEntity
 import org.fossify.calendar.models.ContextualRule
@@ -248,11 +249,25 @@ class EditContextualRuleDialog(
     }
 
     private fun showPatternError() {
+        binding.contextualRulePatternHint.error = patternError()
+    }
+
+    // a syntax error, or a shape that could backtrack forever on some title (RegexRisk)
+    private fun patternError(): String? {
         val input = binding.contextualRulePattern.value
-        binding.contextualRulePatternHint.error = if (rule.matchType == MATCH_TITLE_REGEX && input.isNotEmpty()) {
-            ContextualRuleEvaluator.regexError(input)?.let { activity.getString(R.string.contextual_rule_bad_regex, it) }
-        } else {
-            null
+        if (rule.matchType != MATCH_TITLE_REGEX || input.isEmpty()) {
+            return null
+        }
+
+        ContextualRuleEvaluator.regexError(input)?.let {
+            return activity.getString(R.string.contextual_rule_bad_regex, it)
+        }
+
+        return when (RegexRisk.check(input)) {
+            RegexRisk.Risk.NESTED_QUANTIFIER -> activity.getString(R.string.contextual_regex_risk_nested)
+            RegexRisk.Risk.QUANTIFIED_ALTERNATION -> activity.getString(R.string.contextual_regex_risk_alternation)
+            RegexRisk.Risk.BACKREFERENCE -> activity.getString(R.string.contextual_regex_risk_backreference)
+            null -> null
         }
     }
 
@@ -284,7 +299,7 @@ class EditContextualRuleDialog(
                     return false
                 }
 
-                if (rule.matchType == MATCH_TITLE_REGEX && ContextualRuleEvaluator.regexError(input) != null) {
+                if (patternError() != null) {
                     showPatternError()
                     return false
                 }

@@ -348,6 +348,9 @@
     <string name="contextual_rule_needs_hours">Enter a number of hours</string>
     <string name="contextual_rule_needs_calendar">Pick a calendar. Without one, every event would become contextual.</string>
     <string name="contextual_rule_bad_regex">Invalid pattern: %s</string>
+    <string name="contextual_regex_risk_nested">A repeated group with a repeat inside, like (a+)+, can freeze the app. Try a simpler pattern.</string>
+    <string name="contextual_regex_risk_alternation">A repeated choice, like (a|b)+, can freeze the app. Try a character class instead, like [ab]+.</string>
+    <string name="contextual_regex_risk_backreference">Backreferences, like \\1, can freeze the app. Try a pattern without them.</string>
     <string name="contextual_preview_loading">Checking your next 30 days…</string>
     <!-- quantity follows the total (%2$d) -->
     <plurals name="contextual_preview_summary">
