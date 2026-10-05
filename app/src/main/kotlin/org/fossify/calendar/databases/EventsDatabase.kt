@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 
 @Database(
     entities = [Event::class, CalendarEntity::class, Widget::class, Task::class, ContextualRule::class],
-    version = 13
+    version = 14
 )
 @TypeConverters(Converters::class)
 abstract class EventsDatabase : RoomDatabase() {
@@ -71,6 +71,7 @@ abstract class EventsDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_10_11)
                             .addMigrations(MIGRATION_11_12)
                             .addMigrations(MIGRATION_12_13)
+                            .addMigrations(MIGRATION_13_14)
                             .build()
                         db!!.openHelper.setWriteAheadLoggingEnabled(true)
                     }
@@ -210,6 +211,18 @@ abstract class EventsDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.apply {
                     execSQL(ADD_RULE_CALDAV_CALENDAR_ID_SQL)
+                }
+            }
+        }
+
+        internal const val ADD_RULE_KEY_NAME_SQL = "ALTER TABLE contextual_rules ADD COLUMN key_name TEXT"
+        internal const val ADD_RULE_KEY_COLOR_SQL = "ALTER TABLE contextual_rules ADD COLUMN key_color INTEGER"
+
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.apply {
+                    execSQL(ADD_RULE_KEY_NAME_SQL)
+                    execSQL(ADD_RULE_KEY_COLOR_SQL)
                 }
             }
         }

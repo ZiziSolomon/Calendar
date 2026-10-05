@@ -49,6 +49,22 @@ class EventsDatabaseMigrationTest {
     }
 
     @Test
+    fun migration13to14GivesTheTableRoomExpects() {
+        val expected = createSqlByTable(14)["contextual_rules"]
+        assertNotNull("contextual_rules missing from 14.json, rebuild to re-export", expected)
+        val v13 = createSqlByTable(13)["contextual_rules"]!!
+        val afterAlter = v13.removeSuffix(")") + ", `key_name` TEXT, `key_color` INTEGER)"
+        assertEquals(expected, afterAlter)
+        assertEquals("ALTER TABLE contextual_rules ADD COLUMN key_name TEXT", EventsDatabase.ADD_RULE_KEY_NAME_SQL)
+        assertEquals("ALTER TABLE contextual_rules ADD COLUMN key_color INTEGER", EventsDatabase.ADD_RULE_KEY_COLOR_SQL)
+    }
+
+    @Test
+    fun version14OnlyChangesContextualRules() {
+        assertEquals(createSqlByTable(13) - "contextual_rules", createSqlByTable(14) - "contextual_rules")
+    }
+
+    @Test
     fun version13OnlyChangesContextualRules() {
         val v12 = createSqlByTable(12)
         val v13 = createSqlByTable(13)

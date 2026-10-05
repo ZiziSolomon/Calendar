@@ -537,6 +537,11 @@ class EventsHelper(val context: Context) {
             it.updateIsPastEvent()
             // after updateIsTaskCompleted(), which may overwrite flags with a stored copy
             it.isContextual = contextualEvaluator.isContextual(it)
+            if (it.isContextual) {
+                val display = contextualEvaluator.display(it)
+                it.contextualKeyName = display.keyName
+                it.contextualKeyColor = display.keyColor
+            }
             val originalEvent = eventsDB.getEventWithId(it.id!!)
             if (originalEvent != null &&
                 (birthDayEventId != -1L && it.calendarId == birthDayEventId) or

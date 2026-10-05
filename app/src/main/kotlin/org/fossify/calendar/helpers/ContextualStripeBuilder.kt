@@ -35,7 +35,9 @@ object ContextualStripeBuilder {
         val stripes = ArrayList<ContextualStripe>()
         // longest events first, so ties in the stable sort below also favour the nested one
         for (event in events.sortedByDescending { it.endTS - it.startTS }) {
-            val color = colorFor?.invoke(event) ?: if (event.color == 0) fallbackColor else event.color
+            val color = colorFor?.invoke(event) ?: event.contextualKeyColor ?: if (event.color == 0) fallbackColor else event.color
+            // a rule's key name groups differently titled events under one name (Phase 16)
+            val displayTitle = event.contextualKeyName?.takeIf { it.isNotBlank() } ?: event.title
             val start = DateTime(event.startTS * 1000L, zone)
             val end = DateTime(event.endTS * 1000L, zone)
             val startDay = start.toLocalDate()
@@ -47,7 +49,7 @@ object ContextualStripeBuilder {
             while (!day.isAfter(until)) {
                 val dayIndex = Days.daysBetween(firstDay, day).days
                 slice(event, start, end, day, startDay, endDay)?.let { (startMinute, endMinute) ->
-                    stripes.add(ContextualStripe(dayIndex, startMinute, endMinute, color, event.title, event.id ?: 0L, event.startTS, event.isTask()))
+                    stripes.add(ContextualStripe(dayIndex, startMinute, endMinute, color, displayTitle, event.id ?: 0L, event.startTS, event.isTask()))
                 }
                 day = day.plusDays(1)
             }

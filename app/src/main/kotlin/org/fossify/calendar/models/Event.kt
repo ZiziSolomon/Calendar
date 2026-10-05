@@ -5,6 +5,7 @@ import android.provider.CalendarContract.Attendees
 import androidx.collection.LongSparseArray
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import org.fossify.calendar.extensions.seconds
@@ -253,6 +254,14 @@ data class Event(
         set(isPastEvent) {
             flags = flags.addBitIf(isPastEvent, FLAG_IS_IN_PAST)
         }
+
+    // set with isContextual by EventsHelper.getEventsSync(), from the matching rules (Phase 16);
+    // null = use the event's own title / the automatic colour. Not stored: rules can change
+    @Ignore
+    var contextualKeyName: String? = null
+
+    @Ignore
+    var contextualKeyColor: Int? = null
 
     // only meaningful on events that came through EventsHelper.getEventsSync()
     var isContextual: Boolean

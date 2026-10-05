@@ -45,6 +45,26 @@ class ContextualRulesBackupTest {
     }
 
     @Test
+    fun keyNameAndColourTravelWithTheRule() {
+        val named = ContextualRule(id = 8, matchType = MATCH_ALL, calendarId = 3, keyName = "Work", keyColor = 0xFF123456.toInt())
+        val entry = roundTrip(listOf(named)).single()
+        assertEquals("Work", entry.keyName)
+        assertEquals(0xFF123456.toInt(), entry.keyColor)
+
+        val restored = planOnFreshInstall(listOf(entry)).toInsert.single()
+        assertEquals("Work", restored.keyName)
+        assertEquals(0xFF123456.toInt(), restored.keyColor)
+    }
+
+    @Test
+    fun anOlderExportWithoutKeyFieldsStillImports() {
+        val entry = ContextualRulesBackup.decode("""[{"matchType":2,"pattern":"on call","enabled":true}]""").single()
+        val rule = planOnFreshInstall(listOf(entry)).toInsert.single()
+        assertEquals(null, rule.keyName)
+        assertEquals(null, rule.keyColor)
+    }
+
+    @Test
     fun encodedRulesFitOnOneSettingsLine() {
         // the settings file is key=value per line; a newline would split the value
         val json = ContextualRulesBackup.encode(rules + ContextualRule(id = 7, matchType = MATCH_TITLE_CONTAINS, pattern = "a\nb")) { null }

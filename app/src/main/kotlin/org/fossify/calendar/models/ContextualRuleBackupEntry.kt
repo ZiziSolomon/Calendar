@@ -11,4 +11,7 @@ data class ContextualRuleBackupEntry(
     val calendarName: String? = null,
     val caldavCalendarId: Int? = null,
     val importId: String? = null,
+    // Phase 16; absent in older exports, which Gson leaves null
+    val keyName: String? = null,
+    val keyColor: Int? = null,
 )

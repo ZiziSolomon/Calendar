@@ -59,6 +59,39 @@
 
         </org.fossify.commons.views.MyTextInputLayout>
 
+        <!-- how matching events show in the key and grid; the most specific rule wins (Phase 16) -->
+        <org.fossify.commons.views.MyTextInputLayout
+            android:id="@+id/contextual_rule_key_name_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/activity_margin"
+            android:hint="@string/contextual_rule_key_name">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contextual_rule_key_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences"
+                android:singleLine="true"
+                android:textCursorDrawable="@null" />
+
+        </org.fossify.commons.views.MyTextInputLayout>
+
+        <org.fossify.commons.views.MyTextInputLayout
+            android:id="@+id/contextual_rule_key_color_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/activity_margin"
+            android:hint="@string/contextual_rule_key_color">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contextual_rule_key_color"
+                style="@style/UnclickableEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </org.fossify.commons.views.MyTextInputLayout>
+
         <!-- live preview: without it a wrong pattern fails silently (§1.5) -->
         <org.fossify.commons.views.MyTextView
             android:id="@+id/contextual_rule_preview_summary"

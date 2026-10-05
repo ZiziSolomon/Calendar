@@ -29,5 +29,11 @@ data class ContextualRule(
     // Repair key for calendarId, like importId for eventId: the Android calendar id of a synced
     // calendar, which survives the calendar being re-imported under a new local id. Null for
     // local calendars and for rules on every calendar. Added in DB v13.
-    @ColumnInfo(name = "caldav_calendar_id") var caldavCalendarId: Int? = null
+    @ColumnInfo(name = "caldav_calendar_id") var caldavCalendarId: Int? = null,
+    // How matching events appear in the key and grid (Phase 16): the name the key shows instead
+    // of the event title, and a fixed colour instead of the automatic one. Either, both or
+    // neither; when several rules match, the most specific one with a value wins
+    // (ContextualDisplay). Added in DB v14.
+    @ColumnInfo(name = "key_name") var keyName: String? = null,
+    @ColumnInfo(name = "key_color") var keyColor: Int? = null
 )

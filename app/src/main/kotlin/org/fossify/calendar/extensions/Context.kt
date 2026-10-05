@@ -1203,12 +1203,17 @@ private val contextualColorLock = Any()
  * its event/calendar colour when "Give each context its own colour" is off.
  */
 fun Context.contextualColor(event: Event, fallbackColor: Int): Int {
+    // a colour picked on the rule always wins
+    event.contextualKeyColor?.let { return it }
+
     if (!config.ownContextualColors) {
         return if (event.color == 0) fallbackColor else event.color
     }
 
     synchronized(contextualColorLock) {
-        val (slot, updated) = ContextualColors.assign(config.contextualColorSlots, event.title)
+        // keyed by what the key shows, so events grouped under one key name share one colour
+        val name = event.contextualKeyName?.takeIf { it.isNotBlank() } ?: event.title
+        val (slot, updated) = ContextualColors.assign(config.contextualColorSlots, name)
         updated?.let { config.contextualColorSlots = it }
         return ContextualColors.PALETTE[slot % ContextualColors.PALETTE.size]
     }

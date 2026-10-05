@@ -1,5 +1,6 @@
 package org.fossify.calendar.dialogs
 
+import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
 import android.text.InputType
@@ -23,9 +24,11 @@ import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.CalendarEntity
 import org.fossify.calendar.models.ContextualRule
 import org.fossify.calendar.models.Event
+import org.fossify.commons.dialogs.ColorPickerDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getAlertDialogBuilder
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.onTextChangeListener
 import org.fossify.commons.extensions.setupDialogStuff
@@ -75,6 +78,8 @@ class EditContextualRuleDialog(
         binding.apply {
             contextualRuleType.setOnClickListener { pickType() }
             contextualRuleCalendar.setOnClickListener { pickCalendar() }
+            contextualRuleKeyColor.setOnClickListener { pickColor() }
+            contextualRuleKeyName.setText(rule.keyName.orEmpty())
             contextualRulePattern.onTextChangeListener {
                 inputPerType[rule.matchType] = it
                 showPatternError()
@@ -82,6 +87,7 @@ class EditContextualRuleDialog(
             }
         }
         showType()
+        showColor()
         loadPreviewEvents()
 
         activity.eventsHelper.getCalendars(activity, false) {
@@ -292,8 +298,46 @@ class EditContextualRuleDialog(
         binding.contextualRuleCalendar.setText(title ?: activity.getString(R.string.contextual_rule_all_calendars))
     }
 
+    // "Automatic" keeps the palette colour (or the calendar's, per the setting); a picked one wins
+    private fun pickColor() {
+        val items = arrayListOf(
+            RadioItem(COLOR_AUTOMATIC, activity.getString(R.string.contextual_rule_color_automatic)),
+            RadioItem(COLOR_PICK, activity.getString(R.string.contextual_rule_pick_color)),
+        )
+        RadioGroupDialog(activity, items, if (rule.keyColor == null) COLOR_AUTOMATIC else COLOR_PICK) {
+            if (it == COLOR_AUTOMATIC) {
+                rule.keyColor = null
+                showColor()
+            } else {
+                ColorPickerDialog(activity, rule.keyColor ?: activity.getProperPrimaryColor()) { wasPositivePressed, color ->
+                    if (wasPositivePressed) {
+                        rule.keyColor = color
+                        showColor()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showColor() {
+        val color = rule.keyColor
+        binding.contextualRuleKeyColor.apply {
+            setText(activity.getString(if (color == null) R.string.contextual_rule_color_automatic else R.string.contextual_rule_color_custom))
+            val swatch = color?.let {
+                val size = activity.resources.getDimensionPixelSize(R.dimen.contextual_key_swatch_size)
+                GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(it)
+                    setSize(size, size)
+                }
+            }
+            setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, swatch, null)
+        }
+    }
+
     /** Validates the form into [rule]. Returns false (after telling the user why) if it can't be saved. */
     private fun applyInput(): Boolean {
+        rule.keyName = binding.contextualRuleKeyName.value.trim().takeIf { it.isNotEmpty() }
         val input = binding.contextualRulePattern.value
         when (rule.matchType) {
             MATCH_TITLE_CONTAINS, MATCH_TITLE_REGEX -> {
@@ -331,6 +375,8 @@ class EditContextualRuleDialog(
 
     companion object {
         private const val ALL_CALENDARS = -1
+        private const val COLOR_AUTOMATIC = 0
+        private const val COLOR_PICK = 1
         private const val PREVIEW_DEBOUNCE_MS = 250L
     }
 }

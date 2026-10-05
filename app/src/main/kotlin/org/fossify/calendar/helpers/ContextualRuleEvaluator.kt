@@ -30,10 +30,17 @@ class ContextualRuleEvaluator(
 
     val isEmpty = enabledRules.isEmpty()
 
+    // most installs set no key names or colours, so the per-event display lookup can be skipped
+    private val hasDisplayOverrides = enabledRules.any { !it.keyName.isNullOrBlank() || it.keyColor != null }
+
     fun isContextual(event: Event) = !isEmpty && enabledRules.any { matches(it, event) }
 
     /** Every enabled rule that makes [event] contextual, in rule order. For explaining, not for hot paths. */
     fun matchingRules(event: Event): List<ContextualRule> = enabledRules.filter { matches(it, event) }
+
+    /** The key name and colour [event] shows with, from the most specific matching rule (ContextualDisplay). */
+    fun display(event: Event): ContextualDisplay.Result =
+        if (hasDisplayOverrides) ContextualDisplay.resolve(matchingRules(event)) else ContextualDisplay.NONE
 
     private fun matches(rule: ContextualRule, event: Event): Boolean {
         if (rule.calendarId != null && rule.calendarId != event.calendarId) {

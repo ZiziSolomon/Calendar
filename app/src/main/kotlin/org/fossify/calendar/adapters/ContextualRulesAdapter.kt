@@ -1,5 +1,6 @@
 package org.fossify.calendar.adapters
 
+import android.graphics.drawable.GradientDrawable
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
@@ -80,8 +81,23 @@ class ContextualRulesAdapter(
             contextualRuleFrame.isSelected = selectedKeys.contains(row.rule.id?.toInt())
             contextualRuleTitle.text = row.title
             contextualRuleTitle.setTextColor(textColor)
-            contextualRuleSubtitle.text = row.subtitle
+            val keyName = row.rule.keyName?.takeIf { it.isNotBlank() }
+            contextualRuleSubtitle.text = if (keyName == null) {
+                row.subtitle
+            } else {
+                activity.getString(R.string.contextual_rule_key_summary, keyName) + " · " + row.subtitle
+            }
             contextualRuleSubtitle.setTextColor(textColor)
+            val swatch = row.rule.keyColor?.let {
+                val size = activity.resources.getDimensionPixelSize(R.dimen.contextual_key_swatch_size)
+                GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(it)
+                    setSize(size, size)
+                }
+            }
+            contextualRuleTitle.setCompoundDrawablesRelativeWithIntrinsicBounds(swatch, null, null, null)
+            contextualRuleTitle.compoundDrawablePadding = activity.resources.getDimensionPixelSize(org.fossify.commons.R.dimen.small_margin)
 
             contextualRuleEnabled.setOnCheckedChangeListener(null)
             contextualRuleEnabled.isChecked = row.rule.enabled

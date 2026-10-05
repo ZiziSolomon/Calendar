@@ -38,6 +38,8 @@ object ContextualRulesBackup {
                 calendarName = rule.calendarId?.let(calendarNameOf),
                 caldavCalendarId = rule.caldavCalendarId,
                 importId = rule.importId?.takeIf { rule.matchType == MATCH_EVENT_ID },
+                keyName = rule.keyName,
+                keyColor = rule.keyColor,
             )
         }
         return gson.toJson(entries)
@@ -112,6 +114,8 @@ object ContextualRulesBackup {
             eventId = eventId,
             importId = entry.importId.takeIf { entry.matchType == MATCH_EVENT_ID },
             enabled = entry.enabled,
+            keyName = entry.keyName,
+            keyColor = entry.keyColor,
         )
     }
 
