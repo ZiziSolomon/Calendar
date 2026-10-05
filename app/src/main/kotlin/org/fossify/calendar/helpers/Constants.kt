@@ -113,6 +113,8 @@ const val LOOP_REMINDERS = "loop_reminders"
 const val DIM_PAST_EVENTS = "dim_past_events"
 const val SHOW_CONTEXTUAL_EVENTS = "show_contextual_events"
 const val LABEL_CONTEXTUAL_STRIPES = "label_contextual_stripes"
+const val OWN_CONTEXTUAL_COLORS = "own_contextual_colors"
+const val CONTEXTUAL_COLOR_SLOTS = "contextual_color_slots"
 const val MUTE_CONTEXTUAL_REMINDERS = "mute_contextual_reminders"
 // settings export only: the rules themselves live in the DB, not in prefs
 const val CONTEXTUAL_RULES = "contextual_rules"

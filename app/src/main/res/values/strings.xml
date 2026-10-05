@@ -363,6 +363,7 @@
     <string name="show_contextual_events">Show contextual events in day and week views</string>
     <string name="show_contextual_events_short">Show contextual events</string>
     <string name="label_contextual_stripes">Label contextual events in week view</string>
+    <string name="own_contextual_colors">Give each contextual event its own colour</string>
     <string name="mute_contextual_reminders">Mute reminders for contextual events</string>
     <plurals name="contextual_rule_usage">
         <item quantity="one">Matches %d event</item>

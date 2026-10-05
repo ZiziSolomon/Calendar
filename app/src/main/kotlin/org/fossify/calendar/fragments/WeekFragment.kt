@@ -35,6 +35,7 @@ import org.fossify.calendar.databinding.WeeklyViewDayLetterBinding
 import org.fossify.calendar.dialogs.EditRepeatingEventDialog
 import org.fossify.calendar.extensions.checkViewStrikeThrough
 import org.fossify.calendar.extensions.config
+import org.fossify.calendar.extensions.contextualColor
 import org.fossify.calendar.extensions.eventsDB
 import org.fossify.calendar.extensions.eventsHelper
 import org.fossify.calendar.extensions.getWeeklyViewItemHeight
@@ -696,7 +697,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
                 events = if (config.showContextualEvents) contextualEvents else emptyList(),
                 firstDay = weekDateTime.toLocalDate(),
                 daysCount = config.weeklyViewDays,
-                fallbackColor = primaryColor
+                colorFor = { requireContext().contextualColor(it, primaryColor) }
             )
         )
         binding.weekContextualStripes.setStripes(contextualStripes)

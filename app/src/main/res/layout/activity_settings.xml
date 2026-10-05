@@ -912,6 +912,21 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_own_contextual_colors_holder"
+                style="@style/SettingsHolderSwitchStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyMaterialSwitch
+                    android:id="@+id/settings_own_contextual_colors"
+                    style="@style/SettingsSwitchStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/own_contextual_colors" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_mute_contextual_reminders_holder"
                 style="@style/SettingsHolderSwitchStyle"
                 android:layout_width="match_parent"

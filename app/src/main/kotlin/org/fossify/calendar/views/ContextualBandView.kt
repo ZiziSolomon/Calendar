@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import org.fossify.calendar.R
+import org.fossify.calendar.extensions.contextualColor
 import org.fossify.calendar.helpers.Formatter
 import org.fossify.calendar.models.Event
 import org.fossify.commons.extensions.beVisibleIf
@@ -45,7 +46,7 @@ class ContextualBandView(context: Context, attrs: AttributeSet) : HorizontalScro
         val alpha = if (isDarkBackground) 0.20f else 0.15f
 
         events.forEachIndexed { index, event ->
-            val eventColor = if (event.color == 0) context.getProperPrimaryColor() else event.color
+            val eventColor = context.contextualColor(event, context.getProperPrimaryColor())
             val chip = TextView(context).apply {
                 text = label(event) { Formatter.getTimeFromTS(context, it) }
                 contentDescription = text

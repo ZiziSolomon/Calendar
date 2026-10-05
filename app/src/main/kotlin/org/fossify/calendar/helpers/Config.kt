@@ -178,6 +178,19 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(LABEL_CONTEXTUAL_STRIPES, false)
         set(labelContextualStripes) = prefs.edit().putBoolean(LABEL_CONTEXTUAL_STRIPES, labelContextualStripes).apply()
 
+    // on by default since Phase 16: with untitled stripes, colour is how the key tells contexts apart
+    var ownContextualColors: Boolean
+        get() = prefs.getBoolean(OWN_CONTEXTUAL_COLORS, true)
+        set(ownContextualColors) = prefs.edit().putBoolean(OWN_CONTEXTUAL_COLORS, ownContextualColors).apply()
+
+    /** Palette slot per context title (ContextualColors), stored as a JSON object. */
+    var contextualColorSlots: Map<String, Int>
+        get() {
+            val json = org.json.JSONObject(prefs.getString(CONTEXTUAL_COLOR_SLOTS, null) ?: "{}")
+            return json.keys().asSequence().associateWith { json.getInt(it) }
+        }
+        set(slots) = prefs.edit().putString(CONTEXTUAL_COLOR_SLOTS, org.json.JSONObject(slots).toString()).apply()
+
     // off by default: muting is opt-in, so no reminder disappears just because a rule matched
     var muteContextualReminders: Boolean
         get() = prefs.getBoolean(MUTE_CONTEXTUAL_REMINDERS, false)

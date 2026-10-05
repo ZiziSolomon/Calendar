@@ -160,6 +160,7 @@ class MainActivity : SimpleActivity(), RefreshRecyclerViewListener {
     private var mStoredDimPastEvents = true
     private var mStoredShowContextualEvents = true
     private var mStoredLabelContextualStripes = true
+    private var mStoredOwnContextualColors = true
     private var mStoredDimCompletedTasks = true
     private var mStoredHighlightWeekends = false
     private var mStoredStartWeekWithCurrentDay = false
@@ -260,6 +261,7 @@ class MainActivity : SimpleActivity(), RefreshRecyclerViewListener {
             || mStoredDayCode != Formatter.getTodayCode() || mStoredDimPastEvents != config.dimPastEvents || mStoredDimCompletedTasks != config.dimCompletedTasks
             || mStoredHighlightWeekends != config.highlightWeekends || mStoredHighlightWeekendsColor != config.highlightWeekendsColor
             || mStoredShowContextualEvents != config.showContextualEvents || mStoredLabelContextualStripes != config.labelContextualStripes
+            || mStoredOwnContextualColors != config.ownContextualColors
         ) {
             updateViewPager()
         }
@@ -421,6 +423,7 @@ class MainActivity : SimpleActivity(), RefreshRecyclerViewListener {
             mStoredDimPastEvents = dimPastEvents
             mStoredShowContextualEvents = showContextualEvents
             mStoredLabelContextualStripes = labelContextualStripes
+            mStoredOwnContextualColors = ownContextualColors
             mStoredDimCompletedTasks = dimCompletedTasks
             mStoredHighlightWeekends = highlightWeekends
             mStoredHighlightWeekendsColor = highlightWeekendsColor

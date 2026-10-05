@@ -30,6 +30,7 @@ import org.fossify.calendar.helpers.ALLOW_CHANGING_TIME_ZONES
 import org.fossify.calendar.helpers.CONTEXTUAL_RULES
 import org.fossify.calendar.helpers.ContextualRulesHelper
 import org.fossify.calendar.helpers.LABEL_CONTEXTUAL_STRIPES
+import org.fossify.calendar.helpers.OWN_CONTEXTUAL_COLORS
 import org.fossify.calendar.helpers.MUTE_CONTEXTUAL_REMINDERS
 import org.fossify.calendar.helpers.SHOW_CONTEXTUAL_EVENTS
 import org.fossify.calendar.helpers.ALLOW_CREATING_TASKS
@@ -227,6 +228,7 @@ class SettingsActivity : SimpleActivity() {
         setupDimEvents()
         setupShowContextualEvents()
         setupLabelContextualStripes()
+        setupOwnContextualColors()
         setupMuteContextualReminders()
         setupDimCompletedTasks()
         setupAllowChangingTimeZones()
@@ -933,6 +935,14 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupOwnContextualColors() = binding.apply {
+        settingsOwnContextualColors.isChecked = config.ownContextualColors
+        settingsOwnContextualColorsHolder.setOnClickListener {
+            settingsOwnContextualColors.toggle()
+            config.ownContextualColors = settingsOwnContextualColors.isChecked
+        }
+    }
+
     private fun setupDimCompletedTasks() = binding.apply {
         settingsDimCompletedTasks.isChecked = config.dimCompletedTasks
         settingsDimCompletedTasksHolder.setOnClickListener {
@@ -1198,6 +1208,7 @@ class SettingsActivity : SimpleActivity() {
                 put(ALLOW_CREATING_TASKS, config.allowCreatingTasks)
                 put(SHOW_CONTEXTUAL_EVENTS, config.showContextualEvents)
                 put(LABEL_CONTEXTUAL_STRIPES, config.labelContextualStripes)
+                put(OWN_CONTEXTUAL_COLORS, config.ownContextualColors)
                 put(MUTE_CONTEXTUAL_REMINDERS, config.muteContextualReminders)
             }
 
@@ -1321,6 +1332,7 @@ class SettingsActivity : SimpleActivity() {
                 ALLOW_CREATING_TASKS -> config.allowCreatingTasks = value.toBoolean()
                 SHOW_CONTEXTUAL_EVENTS -> config.showContextualEvents = value.toBoolean()
                 LABEL_CONTEXTUAL_STRIPES -> config.labelContextualStripes = value.toBoolean()
+                OWN_CONTEXTUAL_COLORS -> config.ownContextualColors = value.toBoolean()
                 MUTE_CONTEXTUAL_REMINDERS -> config.muteContextualReminders = value.toBoolean()
             }
         }

@@ -27,13 +27,15 @@ object ContextualStripeBuilder {
         firstDay: LocalDate,
         daysCount: Int,
         zone: DateTimeZone = DateTimeZone.getDefault(),
-        fallbackColor: Int = 0
+        fallbackColor: Int = 0,
+        // overrides the event's own colour, e.g. one palette colour per context
+        colorFor: ((Event) -> Int)? = null
     ): List<ContextualStripe> {
         val lastDay = firstDay.plusDays(daysCount - 1)
         val stripes = ArrayList<ContextualStripe>()
         // longest events first, so ties in the stable sort below also favour the nested one
         for (event in events.sortedByDescending { it.endTS - it.startTS }) {
-            val color = if (event.color == 0) fallbackColor else event.color
+            val color = colorFor?.invoke(event) ?: if (event.color == 0) fallbackColor else event.color
             val start = DateTime(event.startTS * 1000L, zone)
             val end = DateTime(event.endTS * 1000L, zone)
             val startDay = start.toLocalDate()

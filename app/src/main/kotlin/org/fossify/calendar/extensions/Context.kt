@@ -39,6 +39,7 @@ import org.fossify.calendar.helpers.ACTION_MARK_COMPLETED
 import org.fossify.calendar.helpers.AUTOMATIC_BACKUP_REQUEST_CODE
 import org.fossify.calendar.helpers.CalDAVHelper
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualColors
 import org.fossify.calendar.helpers.ContextualReminderPolicy
 import org.fossify.calendar.helpers.ContextualRulesCache
 import org.fossify.calendar.helpers.DAY
@@ -1193,4 +1194,22 @@ fun Context.scheduleDummyAlarm() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     )
+}
+
+private val contextualColorLock = Any()
+
+/**
+ * The colour a context is drawn in: its own palette colour (ContextualColors) by default, or
+ * its event/calendar colour when "Give each context its own colour" is off.
+ */
+fun Context.contextualColor(event: Event, fallbackColor: Int): Int {
+    if (!config.ownContextualColors) {
+        return if (event.color == 0) fallbackColor else event.color
+    }
+
+    synchronized(contextualColorLock) {
+        val (slot, updated) = ContextualColors.assign(config.contextualColorSlots, event.title)
+        updated?.let { config.contextualColorSlots = it }
+        return ContextualColors.PALETTE[slot % ContextualColors.PALETTE.size]
+    }
 }
