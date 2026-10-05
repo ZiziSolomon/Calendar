@@ -347,6 +347,8 @@
     <string name="contextual_rule_color_custom">Custom colour</string>
     <string name="contextual_rule_pick_color">Pick a colour…</string>
     <string name="contextual_rule_key_summary">Key: %s</string>
+    <string name="sync_diagnostics">Sync diagnostics</string>
+    <string name="sync_diagnostics_copied">Copied</string>
     <string name="contextual_rule_text_hint">Text in the title</string>
     <string name="contextual_rule_regex_hint">Regular expression</string>
     <string name="contextual_rule_hours_hint">Hours (24 = one day)</string>

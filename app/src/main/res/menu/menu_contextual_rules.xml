@@ -6,4 +6,8 @@
         android:icon="@drawable/ic_plus_vector"
         android:title="@string/add_contextual_rule"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/sync_diagnostics"
+        android:title="@string/sync_diagnostics"
+        app:showAsAction="never" />
 </menu>

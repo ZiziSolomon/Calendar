@@ -21,6 +21,7 @@ import org.fossify.calendar.helpers.EVENT_OCCURRENCE_TS
 import org.fossify.calendar.helpers.IS_TASK_COMPLETED
 import org.fossify.calendar.helpers.ContextualRuleUsage
 import org.fossify.calendar.helpers.ContextualRulesHelper
+import org.fossify.calendar.helpers.SyncDiagnostics
 import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.ContextualRule
 import org.fossify.calendar.models.Event
@@ -53,12 +54,12 @@ class ManageContextualRulesActivity : SimpleActivity() {
         calendarId = intent.getLongExtra(CALENDAR_ID, -1L).takeIf { it != -1L }
 
         binding.manageContextualRulesToolbar.setOnMenuItemClickListener { menuItem ->
-            if (menuItem.itemId == R.id.add_contextual_rule) {
-                showEditDialog(null)
-                true
-            } else {
-                false
+            when (menuItem.itemId) {
+                R.id.add_contextual_rule -> showEditDialog(null)
+                R.id.sync_diagnostics -> showSyncDiagnostics()
+                else -> return@setOnMenuItemClickListener false
             }
+            true
         }
 
         setupEdgeToEdge(padBottomSystem = listOf(binding.manageContextualRulesList))
@@ -201,4 +202,31 @@ class ManageContextualRulesActivity : SimpleActivity() {
             showEditDialog(it as ContextualRule)
         }
     }
+
+    // read-only ids report for the laptop plan (LAPTOP_PLAN.md decision 2); copyable so it can be pasted into chat
+    private fun showSyncDiagnostics() {
+        ensureBackgroundThread {
+            val report = SyncDiagnostics.report(this)
+            runOnUiThread {
+                val text = MyTextView(this).apply {
+                    this.text = report
+                    setTextIsSelectable(true)
+                    setTextColor(getProperTextColor())
+                    typeface = android.graphics.Typeface.MONOSPACE
+                    val padding = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
+                    setPadding(padding, padding, padding, padding)
+                }
+                getAlertDialogBuilder()
+                    .setView(ScrollView(this).apply { addView(text) })
+                    .setPositiveButton(android.R.string.copy) { _, _ ->
+                        val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(getString(R.string.sync_diagnostics), report))
+                        toast(R.string.sync_diagnostics_copied)
+                    }
+                    .setNegativeButton(org.fossify.commons.R.string.ok, null)
+                    .show()
+            }
+        }
+    }
+
 }
