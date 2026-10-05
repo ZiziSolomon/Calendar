@@ -5,6 +5,7 @@ import org.fossify.calendar.R
 import org.fossify.calendar.adapters.ManageCalendarsAdapter
 import org.fossify.calendar.databinding.ActivityManageCalendarsBinding
 import org.fossify.calendar.dialogs.EditCalendarDialog
+import org.fossify.calendar.extensions.config
 import org.fossify.calendar.extensions.eventsHelper
 import org.fossify.calendar.interfaces.DeleteCalendarsListener
 import org.fossify.calendar.models.CalendarEntity
@@ -51,9 +52,16 @@ class ManageCalendarsActivity : SimpleActivity(), DeleteCalendarsListener {
     }
 
     private fun setupOptionsMenu() {
+        binding.manageCalendarsToolbar.menu.findItem(R.id.show_dividers).isChecked = config.showCalendarDividers
         binding.manageCalendarsToolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.add_calendar -> showEditCalendarDialog()
+                R.id.show_dividers -> {
+                    config.showCalendarDividers = !config.showCalendarDividers
+                    menuItem.isChecked = config.showCalendarDividers
+                    (binding.manageCalendarsList.adapter as? ManageCalendarsAdapter)?.showDividers = config.showCalendarDividers
+                }
+
                 else -> return@setOnMenuItemClickListener false
             }
             return@setOnMenuItemClickListener true

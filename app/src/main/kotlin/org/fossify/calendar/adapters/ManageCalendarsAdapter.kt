@@ -9,6 +9,7 @@ import androidx.appcompat.widget.PopupMenu
 import org.fossify.calendar.R
 import org.fossify.calendar.activities.SimpleActivity
 import org.fossify.calendar.databinding.ItemCalendarBinding
+import org.fossify.calendar.extensions.config
 import org.fossify.calendar.extensions.eventsHelper
 import org.fossify.calendar.helpers.LOCAL_CALENDAR_ID
 import org.fossify.calendar.interfaces.DeleteCalendarsListener
@@ -16,6 +17,8 @@ import org.fossify.calendar.models.CalendarEntity
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
+import org.fossify.commons.extensions.adjustAlpha
+import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getPopupMenuTheme
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperTextColor
@@ -33,6 +36,13 @@ class ManageCalendarsAdapter(
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
     private val MOVE_EVENTS = 0
     private val DELETE_EVENTS = 1
+    private val DIVIDER_ALPHA = 0.2f
+
+    var showDividers = activity.config.showCalendarDividers
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
 
     init {
         setupDragListener(true)
@@ -94,9 +104,17 @@ class ManageCalendarsAdapter(
     private fun setupView(view: View, calendar: CalendarEntity) {
         ItemCalendarBinding.bind(view).apply {
             eventItemFrame.isSelected = selectedKeys.contains(calendar.id?.toInt())
-            calendarTitle.text = calendar.getDisplayTitle()
+            calendarTitle.text = calendar.getDisplayName()
             calendarColor.setFillWithStroke(calendar.color, activity.getProperBackgroundColor())
             calendarTitle.setTextColor(textColor)
+
+            val account = calendar.getAccountName()
+            calendarSubtitle.beVisibleIf(account.isNotEmpty())
+            calendarSubtitle.text = account
+            calendarSubtitle.setTextColor(textColor)
+
+            calendarDivider.beVisibleIf(showDividers)
+            calendarDivider.setBackgroundColor(textColor.adjustAlpha(DIVIDER_ALPHA))
 
             overflowMenuIcon.drawable.apply {
                 mutate()

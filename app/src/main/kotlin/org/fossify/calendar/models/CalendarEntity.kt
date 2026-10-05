@@ -20,4 +20,9 @@ data class CalendarEntity(
         if (caldavCalendarId == 0) title else "$caldavDisplayName ($caldavEmail)"
 
     fun isSyncedCalendar() = caldavCalendarId != 0
+
+    // getDisplayTitle() split in two, for rows that show the account on a second line
+    fun getDisplayName() = if (caldavCalendarId == 0) title else caldavDisplayName
+
+    fun getAccountName() = if (caldavCalendarId == 0) "" else caldavEmail
 }
