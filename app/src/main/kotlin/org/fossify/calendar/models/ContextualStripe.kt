@@ -14,6 +14,9 @@ data class ContextualStripe(
     val eventId: Long = 0L,
     val occurrenceTS: Long = 0L,
     val isTask: Boolean = false,
+    // side-by-side lanes when contexts overlap in this column (ContextualLanes)
+    val lane: Int = 0,
+    val laneCount: Int = 1,
 ) {
     data class Bounds(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
@@ -25,8 +28,12 @@ data class ContextualStripe(
         val columnWidth = viewWidth / daysCount.toFloat()
         // the day columns live in a horizontal LinearLayout, which lays out right-to-left in RTL
         val column = if (isRtl) daysCount - 1 - dayIndex else dayIndex
-        val left = column * columnWidth + inset
-        val right = (column + 1) * columnWidth - inset
+        // lanes split the inset column, with an inset-wide gap between them; they mirror with
+        // the columns in RTL so the first lane stays on the reading-start side
+        val laneWidth = (columnWidth - 2 * inset - (laneCount - 1) * inset) / laneCount
+        val visualLane = if (isRtl) laneCount - 1 - lane else lane
+        val left = column * columnWidth + inset + visualLane * (laneWidth + inset)
+        val right = left + laneWidth
         return Bounds(left, minuteToY(startMinute, rowHeight), right, minuteToY(endMinute, rowHeight))
     }
 

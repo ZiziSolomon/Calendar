@@ -33,6 +33,34 @@ class ContextualStripeTest {
     }
 
     @Test
+    fun lanesSplitTheColumn() {
+        val first = bounds(ContextualStripe(dayIndex = 1, startMinute = 0, endMinute = 60, color = 0, lane = 0, laneCount = 2))
+        val second = bounds(ContextualStripe(dayIndex = 1, startMinute = 0, endMinute = 60, color = 0, lane = 1, laneCount = 2))
+        assertEquals(100f, first.left)
+        assertEquals(150f, first.right)
+        assertEquals(150f, second.left)
+        assertEquals(200f, second.right)
+    }
+
+    @Test
+    fun lanesKeepAnInsetGapBetweenThem() {
+        // 100px column, 2px inset each side and 2px between: two 47px lanes
+        val first = bounds(ContextualStripe(dayIndex = 0, startMinute = 0, endMinute = 60, color = 0, lane = 0, laneCount = 2), inset = 2f)
+        val second = bounds(ContextualStripe(dayIndex = 0, startMinute = 0, endMinute = 60, color = 0, lane = 1, laneCount = 2), inset = 2f)
+        assertEquals(2f, first.left)
+        assertEquals(49f, first.right)
+        assertEquals(51f, second.left)
+        assertEquals(98f, second.right)
+    }
+
+    @Test
+    fun rtlMirrorsTheLanesToo() {
+        val first = bounds(ContextualStripe(dayIndex = 0, startMinute = 0, endMinute = 60, color = 0, lane = 0, laneCount = 2), isRtl = true)
+        assertEquals(650f, first.left)
+        assertEquals(700f, first.right)
+    }
+
+    @Test
     fun verticalPositionMatchesTheGridLineCorrection() {
         // WeeklyViewGrid draws hour line i at rowHeight * i - i / 2
         val b = bounds(ContextualStripe(dayIndex = 0, startMinute = 9 * 60, endMinute = 17 * 60, color = 0))

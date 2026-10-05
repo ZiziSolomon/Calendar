@@ -42,6 +42,7 @@ import org.fossify.calendar.extensions.intersects
 import org.fossify.calendar.extensions.seconds
 import org.fossify.calendar.extensions.shouldStrikeThrough
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualLanes
 import org.fossify.calendar.helpers.ContextualRenderKey
 import org.fossify.calendar.helpers.ContextualStripeBuilder
 import org.fossify.calendar.helpers.ContextualStripeDescription
@@ -680,11 +681,13 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         // packing below, or they'd shove real events sideways (docs/CONTEXTUAL_EVENTS.md §3.11)
         // partitioned out even when hidden, so hiding them never brings back the clutter
         val (contextualEvents, events) = allEvents.partition { it.isContextual }
-        contextualStripes = ContextualStripeBuilder.build(
-            events = if (config.showContextualEvents) contextualEvents else emptyList(),
-            firstDay = weekDateTime.toLocalDate(),
-            daysCount = config.weeklyViewDays,
-            fallbackColor = primaryColor
+        contextualStripes = ContextualLanes.forColumns(
+            ContextualStripeBuilder.build(
+                events = if (config.showContextualEvents) contextualEvents else emptyList(),
+                firstDay = weekDateTime.toLocalDate(),
+                daysCount = config.weeklyViewDays,
+                fallbackColor = primaryColor
+            )
         )
         binding.weekContextualStripes.setStripes(contextualStripes)
         describeDayContexts()
