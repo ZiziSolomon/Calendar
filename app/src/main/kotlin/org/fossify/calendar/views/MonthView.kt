@@ -35,8 +35,9 @@ class MonthView(context: Context, attrs: AttributeSet, defStyle: Int) : View(con
         // more concurrent contexts than this in one week row are dropped from the grid (the key
         // still lists them); thin bars stacked higher would start eating the event titles
         private const val MAX_CONTEXT_LANES = 3
-        // bars are thin, so stronger than the week view's 15-20% background tint
-        private const val CONTEXT_BAR_ALPHA = 0xCC
+        // below a real event's full colour, so a context never outshouts a commitment (Zizi, Phase
+        // 16), yet stronger than the week view's 15-20% tint, since the bars are only 4dp thick
+        private const val CONTEXT_BAR_ALPHA = 0.5f
     }
 
     private var textPaint: Paint
@@ -319,13 +320,26 @@ class MonthView(context: Context, attrs: AttributeSet, defStyle: Int) : View(con
         return max(0f, barsBottom + contextBarGap - firstTitleTop).toInt()
     }
 
+    // grid day index of "now", for dimming past bars; off-grid months give -1 or past the end
+    private fun nowDayIndex(): Int {
+        val today = days.indexOfFirst { it.isToday }
+        return when {
+            today != -1 -> today
+            days.isEmpty() || days.first().code > Formatter.getTodayCode() -> -1
+            else -> days.size
+        }
+    }
+
     private fun drawContextBars(canvas: Canvas) {
         val radius = contextBarHeight / 2
+        val nowIndex = nowDayIndex()
+        val nowMinute = DateTime.now().minuteOfDay
         for (bar in contextBars) {
             val top = contextBarsTop(bar.row) + bar.lane * (contextBarHeight + contextBarGap)
             val (left, right) = bar.xRange(dayWidth, horizontalOffset.toFloat())
-            contextBarPaint.color = bar.color
-            contextBarPaint.alpha = CONTEXT_BAR_ALPHA
+            // quieter than real events, and dimmed when past exactly as they are (getEventBackgroundColor)
+            val isPast = dimPastEvents && !isPrintVersion && ContextualMonthBars.hasEnded(bar, nowIndex, nowMinute)
+            contextBarPaint.color = bar.color.adjustAlpha(if (isPast) CONTEXT_BAR_ALPHA * MEDIUM_ALPHA else CONTEXT_BAR_ALPHA)
             // a minimum width keeps a short context visible as a dash
             canvas.drawRoundRect(left, top, max(right, left + contextBarHeight), top + contextBarHeight, radius, radius, contextBarPaint)
         }

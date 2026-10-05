@@ -31,6 +31,17 @@ object ContextualMonthBars {
     }
 
     /**
+     * Whether [bar] is over at [nowMinute] on grid day [nowDayIndex], so it dims like a past
+     * event. Off-grid "now" works too: -1 for a grid that starts after today (nothing past), or
+     * past the last index for one that ended before today (everything past).
+     */
+    fun hasEnded(bar: Bar, nowDayIndex: Int, nowMinute: Int, daysPerRow: Int = 7): Boolean {
+        val barEnd = bar.row.toLong() * daysPerRow * MINUTES_PER_DAY + bar.end
+        val now = nowDayIndex.toLong() * MINUTES_PER_DAY + nowMinute
+        return barEnd <= now
+    }
+
+    /**
      * [stripes] are day slices over the whole grid (ContextualStripeBuilder with the grid's
      * first day and 42 days). Slices of one occurrence on neighbouring days of a row are joined
      * back into one bar; a context running past the row's end continues as a new bar on the

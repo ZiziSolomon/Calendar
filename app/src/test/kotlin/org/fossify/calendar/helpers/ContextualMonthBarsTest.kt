@@ -75,6 +75,34 @@ class ContextualMonthBarsTest {
     }
 
     @Test
+    fun barEndingBeforeNowHasEnded() {
+        // Monday 09:00-17:00; now is Monday 18:00 in the same row
+        val bar = ContextualMonthBars.layout(listOf(slice(1, 540, 1020))).single()
+        assertEquals(true, ContextualMonthBars.hasEnded(bar, nowDayIndex = 1, nowMinute = 1080))
+        assertEquals(false, ContextualMonthBars.hasEnded(bar, nowDayIndex = 1, nowMinute = 600))
+    }
+
+    @Test
+    fun barStillRunningHasNotEnded() {
+        // On call Monday to Friday; now is Wednesday
+        val bar = ContextualMonthBars.layout((1..5).map { slice(it, 0, day) }).single()
+        assertEquals(false, ContextualMonthBars.hasEnded(bar, nowDayIndex = 3, nowMinute = 0))
+    }
+
+    @Test
+    fun earlierRowsHaveEndedLaterOnesHaveNot() {
+        val bars = ContextualMonthBars.layout(listOf(slice(0, 0, day, eventId = 1), slice(14, 0, day, eventId = 2)))
+        assertEquals(listOf(true, false), bars.map { ContextualMonthBars.hasEnded(it, nowDayIndex = 9, nowMinute = 0) })
+    }
+
+    @Test
+    fun offGridNowDimsAllOrNothing() {
+        val bar = ContextualMonthBars.layout(listOf(slice(41, 0, day))).single()
+        assertEquals(true, ContextualMonthBars.hasEnded(bar, nowDayIndex = 42, nowMinute = 0))
+        assertEquals(false, ContextualMonthBars.hasEnded(bar, nowDayIndex = -1, nowMinute = 0))
+    }
+
+    @Test
     fun noStripesNoBars() {
         assertEquals(emptyList<ContextualMonthBars.Bar>(), ContextualMonthBars.layout(emptyList()))
     }
