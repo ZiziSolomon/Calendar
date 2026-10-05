@@ -18,6 +18,10 @@ class MonthlyCalendarImpl(val callback: MonthlyCalendar, val context: Context) {
     private val mToday: String = DateTime().toString(Formatter.DAYCODE_PATTERN)
     private var mEvents = ArrayList<Event>()
 
+    /** The contexts the grid leaves out of [mEvents]; month view draws them as bars itself. */
+    var contextualEvents = emptyList<Event>()
+        private set
+
     lateinit var mTargetDate: DateTime
 
     fun updateMonthlyCalendar(targetDate: DateTime) {
@@ -128,8 +132,11 @@ class MonthlyCalendarImpl(val callback: MonthlyCalendar, val context: Context) {
 
     private fun gotEvents(events: ArrayList<Event>) {
         // month grids (month view, month+day view dots, monthly widget) show commitments only;
-        // a multi-day context would otherwise paint a bar or dot on every day it spans (§3.19)
-        mEvents = ArrayList(events.filterNot { it.isContextual })
+        // a multi-day context would otherwise paint a bar or dot on every day it spans (§3.19).
+        // Month view draws contexts separately, as time-of-day bars (Phase 16)
+        val (contexts, commitments) = events.partition { it.isContextual }
+        contextualEvents = contexts
+        mEvents = ArrayList(commitments)
         getDays(true)
     }
 }

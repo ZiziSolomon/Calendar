@@ -10,6 +10,18 @@
         android:id="@+id/month_view_wrapper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@+id/month_contextual_key"
         android:layout_below="@+id/top_left_arrow" />
+
+    <!-- the contexts on this month's grid; same key as week view -->
+    <org.fossify.calendar.views.ContextualKeyView
+        android:id="@+id/month_contextual_key"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/contextual_key_height"
+        android:layout_alignParentBottom="true"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/small_margin"
+        android:paddingEnd="@dimen/contextual_key_fab_clearance"
+        android:visibility="gone" />
 
 </RelativeLayout>

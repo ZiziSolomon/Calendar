@@ -10,6 +10,7 @@ import android.view.View
 import org.fossify.calendar.R
 import org.fossify.calendar.extensions.*
 import org.fossify.calendar.helpers.COLUMN_COUNT
+import org.fossify.calendar.helpers.ContextualMonthBars
 import org.fossify.calendar.helpers.Formatter
 import org.fossify.calendar.helpers.ROW_COUNT
 import org.fossify.calendar.models.DayMonthly
@@ -31,6 +32,11 @@ class MonthView(context: Context, attrs: AttributeSet, defStyle: Int) : View(con
         private const val BG_CORNER_RADIUS = 8f
         private const val EVENT_DOT_COLUMN_COUNT = 3
         private const val EVENT_DOT_ROW_COUNT = 1
+        // more concurrent contexts than this in one week row are dropped from the grid (the key
+        // still lists them); thin bars stacked higher would start eating the event titles
+        private const val MAX_CONTEXT_LANES = 3
+        // bars are thin, so stronger than the week view's 15-20% background tint
+        private const val CONTEXT_BAR_ALPHA = 0xCC
     }
 
     private var textPaint: Paint
@@ -64,6 +70,13 @@ class MonthView(context: Context, attrs: AttributeSet, defStyle: Int) : View(con
     private var days = ArrayList<DayMonthly>()
     private var dayVerticalOffsets = SparseIntArray()
     private var selectedDayCoords = Point(-1, -1)
+
+    // contexts: thin bars along the bottom of each week row, at their real times (Phase 16)
+    private var contextBars = emptyList<ContextualMonthBars.Bar>()
+    private var contextLanesPerRow = IntArray(ROW_COUNT)
+    private val contextBarHeight = resources.getDimension(R.dimen.contextual_month_bar_height)
+    private val contextBarGap = resources.getDimension(R.dimen.contextual_month_bar_gap)
+    private val contextBarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0)
 
@@ -266,7 +279,8 @@ class MonthView(context: Context, attrs: AttributeSet, defStyle: Int) : View(con
                     }
 
                     canvas.drawText(dayNumber, xPosCenter, textY, textPaint)
-                    dayVerticalOffsets.put(day.indexOnMonthView, (verticalOffset + textPaint.textSize * 2).toInt())
+                    val contextShift = if (isMonthDayView) 0 else contextBandShift(y)
+                    dayVerticalOffsets.put(day.indexOnMonthView, (verticalOffset + textPaint.textSize * 2).toInt() + contextShift)
                 }
                 curId++
             }
@@ -276,6 +290,44 @@ class MonthView(context: Context, attrs: AttributeSet, defStyle: Int) : View(con
             for (event in allEvents) {
                 drawEvent(event, canvas)
             }
+            drawContextBars(canvas)
+        }
+    }
+
+    fun setContextBars(bars: List<ContextualMonthBars.Bar>) {
+        contextBars = bars.filter { it.lane < MAX_CONTEXT_LANES && it.row < ROW_COUNT }
+        contextLanesPerRow = IntArray(ROW_COUNT).also { lanes ->
+            contextBars.forEach { lanes[it.row] = max(lanes[it.row], it.lane + 1) }
+        }
+        invalidate()
+    }
+
+    // bars sit just under the date numbers (clear of today's circle), so they read as part of
+    // their own week; along a row's bottom they hugged the next week's numbers instead
+    private fun contextBarsTop(row: Int) = weekDaysLetterHeight + row * dayHeight + textPaint.textSize * 1.5f + contextBarGap
+
+    // how far a row's event titles move down to make room for its bars
+    private fun contextBandShift(row: Int): Int {
+        val lanes = contextLanesPerRow.getOrElse(row) { 0 }
+        if (lanes == 0) {
+            return 0
+        }
+
+        val barsBottom = textPaint.textSize * 1.5f + contextBarGap + lanes * (contextBarHeight + contextBarGap)
+        // the first title's top, relative to the row, as drawEvent places it
+        val firstTitleTop = textPaint.textSize * 2 - eventTitleHeight + smallPadding
+        return max(0f, barsBottom + contextBarGap - firstTitleTop).toInt()
+    }
+
+    private fun drawContextBars(canvas: Canvas) {
+        val radius = contextBarHeight / 2
+        for (bar in contextBars) {
+            val top = contextBarsTop(bar.row) + bar.lane * (contextBarHeight + contextBarGap)
+            val (left, right) = bar.xRange(dayWidth, horizontalOffset.toFloat())
+            contextBarPaint.color = bar.color
+            contextBarPaint.alpha = CONTEXT_BAR_ALPHA
+            // a minimum width keeps a short context visible as a dash
+            canvas.drawRoundRect(left, top, max(right, left + contextBarHeight), top + contextBarHeight, radius, radius, contextBarPaint)
         }
     }
 

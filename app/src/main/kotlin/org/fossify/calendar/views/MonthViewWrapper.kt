@@ -13,6 +13,7 @@ import org.fossify.calendar.extensions.launchNewEventIntent
 import org.fossify.calendar.extensions.launchNewTaskIntent
 import org.fossify.calendar.helpers.COLUMN_COUNT
 import org.fossify.calendar.helpers.Formatter
+import org.fossify.calendar.helpers.ContextualMonthBars
 import org.fossify.calendar.helpers.ROW_COUNT
 import org.fossify.calendar.helpers.TYPE_EVENT
 import org.fossify.calendar.helpers.TYPE_TASK
@@ -120,6 +121,8 @@ class MonthViewWrapper(
         isMonthDayView = !addEvents
         binding.monthView.updateDays(days, isMonthDayView)
     }
+
+    fun setContextBars(bars: List<ContextualMonthBars.Bar>) = binding.monthView.setContextBars(bars)
 
     private fun setupHorizontalOffset() {
         horizontalOffset = context.getWeekNumberWidth()

@@ -1,6 +1,7 @@
 package org.fossify.calendar.fragments
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,18 +13,28 @@ import org.fossify.calendar.activities.MainActivity
 import org.fossify.calendar.databinding.FragmentMonthBinding
 import org.fossify.calendar.databinding.TopNavigationBinding
 import org.fossify.calendar.extensions.config
+import org.fossify.calendar.extensions.contextualColor
 import org.fossify.calendar.extensions.getViewBitmap
 import org.fossify.calendar.extensions.printBitmap
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualKey
+import org.fossify.calendar.helpers.ContextualMonthBars
+import org.fossify.calendar.helpers.ContextualRenderKey
+import org.fossify.calendar.helpers.ContextualStripeBuilder
 import org.fossify.calendar.helpers.DAY_CODE
+import org.fossify.calendar.helpers.EVENT_ID
+import org.fossify.calendar.helpers.EVENT_OCCURRENCE_TS
 import org.fossify.calendar.helpers.Formatter
 import org.fossify.calendar.helpers.MonthlyCalendarImpl
+import org.fossify.calendar.helpers.getActivityToOpen
 import org.fossify.calendar.interfaces.MonthlyCalendar
 import org.fossify.calendar.interfaces.NavigationListener
 import org.fossify.calendar.models.DayMonthly
+import org.fossify.calendar.models.Event
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.joda.time.DateTime
 
@@ -88,7 +99,9 @@ class MonthFragment : Fragment(), MonthlyCalendar {
     }
 
     override fun updateMonthlyCalendar(context: Context, month: String, days: ArrayList<DayMonthly>, checkedEvents: Boolean, currTargetDate: DateTime) {
-        val newHash = month.hashCode() + days.hashCode().toLong()
+        // contexts aren't in days, so they join the hash, or a rule change wouldn't redraw
+        val contexts = mCalendar?.contextualEvents.orEmpty()
+        val newHash = month.hashCode() + days.hashCode().toLong() + ContextualRenderKey.of(contexts, mConfig.showContextualEvents)
         if ((mLastHash != 0L && !checkedEvents) || mLastHash == newHash) {
             return
         }
@@ -105,6 +118,31 @@ class MonthFragment : Fragment(), MonthlyCalendar {
                 }
             }
             updateDays(days)
+            updateContexts(days, contexts)
+        }
+    }
+
+    private fun updateContexts(days: ArrayList<DayMonthly>, contexts: List<Event>) {
+        val ctx = context ?: return
+        if (days.isEmpty()) {
+            return
+        }
+
+        val show = mConfig.showContextualEvents
+        val primaryColor = ctx.getProperPrimaryColor()
+        val stripes = ContextualStripeBuilder.build(
+            events = if (show) contexts else emptyList(),
+            firstDay = Formatter.getDateTimeFromCode(days.first().code).toLocalDate(),
+            daysCount = days.size,
+            colorFor = { ctx.contextualColor(it, primaryColor) }
+        )
+        binding.monthViewWrapper.setContextBars(ContextualMonthBars.layout(stripes))
+        binding.monthContextualKey.setEntries(ContextualKey.entries(stripes), reserveSpace = show) { entry ->
+            Intent(ctx, getActivityToOpen(entry.isTask)).apply {
+                putExtra(EVENT_ID, entry.eventId)
+                putExtra(EVENT_OCCURRENCE_TS, entry.occurrenceTS)
+                startActivity(this)
+            }
         }
     }
 
