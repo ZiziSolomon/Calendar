@@ -174,7 +174,8 @@ class Config(context: Context) : BaseConfig(context) {
         set(showContextualEvents) = prefs.edit().putBoolean(SHOW_CONTEXTUAL_EVENTS, showContextualEvents).apply()
 
     var labelContextualStripes: Boolean
-        get() = prefs.getBoolean(LABEL_CONTEXTUAL_STRIPES, true)
+        // off since Phase 16: contexts are named once, in the key under the grid
+        get() = prefs.getBoolean(LABEL_CONTEXTUAL_STRIPES, false)
         set(labelContextualStripes) = prefs.edit().putBoolean(LABEL_CONTEXTUAL_STRIPES, labelContextualStripes).apply()
 
     // off by default: muting is opt-in, so no reminder disappears just because a rule matched

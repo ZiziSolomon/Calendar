@@ -16,6 +16,9 @@
     <dimen name="contextual_stripe_corner_radius">4dp</dimen>
     <dimen name="contextual_stripe_inset">2dp</dimen>
     <dimen name="contextual_label_min_touch_height">48dp</dimen>
+    <dimen name="contextual_key_swatch_size">12dp</dimen>
+    <dimen name="contextual_key_height">36dp</dimen>
+    <dimen name="contextual_key_swatch_stroke">1dp</dimen>
 
     <dimen name="min_widget_width">250dp</dimen>
     <dimen name="min_widget_height">250dp</dimen>

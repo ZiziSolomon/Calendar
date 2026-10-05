@@ -16,6 +16,7 @@ import org.fossify.calendar.adapters.MyWeekPagerAdapter
 import org.fossify.calendar.databinding.FragmentWeekHolderBinding
 import org.fossify.calendar.databinding.WeeklyViewHourTextviewBinding
 import org.fossify.calendar.extensions.*
+import org.fossify.calendar.helpers.ContextualKey
 import org.fossify.calendar.helpers.Formatter
 import org.fossify.calendar.helpers.WEEKLY_VIEW
 import org.fossify.calendar.helpers.WEEK_START_DATE_TIME
@@ -276,7 +277,16 @@ class WeekFragmentsHolder : MyFragmentHolder(), WeekFragmentListener {
     }
 
     override fun getFullFragmentHeight() =
-        binding.weekViewHolder.height - binding.weekViewSeekbar.height - binding.weekViewDaysCountDivider.height
+        binding.weekViewHolder.height - binding.weekViewSeekbar.height - binding.weekViewDaysCountDivider.height - contextualKeyHeight()
+
+    // a gone key still reports its last height
+    private fun contextualKeyHeight() = binding.weekViewContextualKey.let { if (it.visibility == View.GONE) 0 else it.height }
+
+    override fun updateContextualKey(entries: List<ContextualKey.Entry>, onClick: (ContextualKey.Entry) -> Unit) {
+        // the space stays reserved while contexts are shown at all, so swiping between weeks
+        // with and without contexts never resizes the grid
+        binding.weekViewContextualKey.setEntries(entries, reserveSpace = context?.config?.showContextualEvents == true, onClick)
+    }
 
     override fun printView() {
         val lightTextColor = resources.getColor(org.fossify.commons.R.color.theme_light_text_color)

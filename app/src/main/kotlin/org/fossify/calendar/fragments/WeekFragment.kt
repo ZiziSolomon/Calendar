@@ -42,6 +42,7 @@ import org.fossify.calendar.extensions.intersects
 import org.fossify.calendar.extensions.seconds
 import org.fossify.calendar.extensions.shouldStrikeThrough
 import org.fossify.calendar.helpers.Config
+import org.fossify.calendar.helpers.ContextualKey
 import org.fossify.calendar.helpers.ContextualLanes
 import org.fossify.calendar.helpers.ContextualRenderKey
 import org.fossify.calendar.helpers.ContextualStripeBuilder
@@ -137,6 +138,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
     private var allDayEventToRow = LinkedHashMap<Event, Int>()
     private var currEvents = ArrayList<Event>()
     private var contextualStripes = emptyList<ContextualStripe>()
+    private var contextualKeyEntries = emptyList<ContextualKey.Entry>()
     private var dayColumns = ArrayList<RelativeLayout>()
     private var calendarColors = LongSparseArray<Int>()
     private var eventTimeRanges = LinkedHashMap<String, LinkedHashMap<Long, EventWeeklyView>>()
@@ -242,6 +244,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         super.setMenuVisibility(menuVisible)
         isFragmentVisible = menuVisible
         if (isFragmentVisible && wasFragmentInit) {
+            pushContextualKey()
             listener?.updateHoursTopMargin(binding.weekTopHolder.height)
             checkScrollLimits(scrollView.scrollY)
 
@@ -502,7 +505,7 @@ class WeekFragment : Fragment(), WeeklyCalendar {
                 // keeps the grid's tap-to-create, since stripes cover whole days
                 // the stripe layer spans every column, so shift x by this column's offset
                 binding.weekContextualStripes.stripeWithLabelAt(view.left + event.x, event.y)?.let { stripe ->
-                    openContextualEvent(stripe)
+                    openContextualEvent(stripe.eventId, stripe.occurrenceTS, stripe.isTask)
                     return true
                 }
 
@@ -545,10 +548,17 @@ class WeekFragment : Fragment(), WeeklyCalendar {
         })
     }
 
-    private fun openContextualEvent(stripe: ContextualStripe) {
-        Intent(context, getActivityToOpen(stripe.isTask)).apply {
-            putExtra(EVENT_ID, stripe.eventId)
-            putExtra(EVENT_OCCURRENCE_TS, stripe.occurrenceTS)
+    // the key lives in WeekFragmentsHolder, shared by every page, so the visible page fills it
+    private fun pushContextualKey() {
+        listener?.updateContextualKey(contextualKeyEntries) {
+            openContextualEvent(it.eventId, it.occurrenceTS, it.isTask)
+        }
+    }
+
+    private fun openContextualEvent(eventId: Long, occurrenceTS: Long, isTask: Boolean) {
+        Intent(context, getActivityToOpen(isTask)).apply {
+            putExtra(EVENT_ID, eventId)
+            putExtra(EVENT_OCCURRENCE_TS, occurrenceTS)
             startActivity(this)
         }
     }
@@ -690,6 +700,10 @@ class WeekFragment : Fragment(), WeeklyCalendar {
             )
         )
         binding.weekContextualStripes.setStripes(contextualStripes)
+        contextualKeyEntries = ContextualKey.entries(contextualStripes)
+        if (isFragmentVisible) {
+            pushContextualKey()
+        }
         describeDayContexts()
 
         allDayHolders.clear()

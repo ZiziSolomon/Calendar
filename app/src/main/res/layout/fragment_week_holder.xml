@@ -45,7 +45,7 @@
         android:id="@+id/week_view_hours_scrollview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/week_view_seekbar"
+        android:layout_above="@+id/week_view_contextual_key"
         android:layout_below="@+id/week_view_hours_divider"
         android:background="@drawable/stroke_right"
         android:overScrollMode="never"
@@ -64,8 +64,19 @@
         android:id="@+id/week_view_view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/week_view_days_count_divider"
+        android:layout_above="@+id/week_view_contextual_key"
         android:layout_toEndOf="@+id/week_view_hours_scrollview" />
+
+    <!-- the contexts on the visible week, named once instead of on every stripe. Lives here,
+         not in each page, so the hours column and the pages always shrink together -->
+    <org.fossify.calendar.views.ContextualKeyView
+        android:id="@+id/week_view_contextual_key"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/contextual_key_height"
+        android:layout_above="@+id/week_view_days_count_divider"
+        android:paddingStart="@dimen/small_margin"
+        android:paddingEnd="@dimen/small_margin"
+        android:visibility="gone" />
 
     <include
         android:id="@+id/week_view_days_count_divider"
