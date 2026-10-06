@@ -107,7 +107,9 @@ class ContextualRuleEvaluator(
         private fun compileOrNull(pattern: String): Regex? {
             // risky patterns never run here, even if saved before RegexRisk existed: this is the
             // event fetch path, and a runaway match can't be interrupted on Android
-            if (pattern.isBlank() || RegexRisk.check(pattern) != null) {
+            // likewise patterns the laptop app would read differently (RegexPortability), so a rule
+            // never matches different events on the two devices
+            if (pattern.isBlank() || RegexRisk.check(pattern) != null || RegexPortability.check(pattern) != null) {
                 return null
             }
 

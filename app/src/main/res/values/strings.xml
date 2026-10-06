@@ -348,6 +348,12 @@
     <string name="contextual_rule_pick_color">Pick a colour…</string>
     <string name="contextual_rule_key_summary">Key: %s</string>
     <string name="sync_diagnostics">Sync diagnostics</string>
+    <string name="contextual_regex_not_portable">The laptop app reads %s differently, so rules can\'t use it</string>
+    <string name="contextual_regex_construct_atomic">(?&gt;…) groups</string>
+    <string name="contextual_regex_construct_possessive">possessive quantifiers like a++</string>
+    <string name="contextual_regex_construct_flags">inline flags like (?i) (matching already ignores case)</string>
+    <string name="contextual_regex_construct_class_set">[…] inside […], or &amp;&amp;</string>
+    <string name="contextual_regex_construct_escape">this backslash escape</string>
     <string name="sync_diagnostics_copied">Copied</string>
     <string name="contextual_rule_text_hint">Text in the title</string>
     <string name="contextual_rule_regex_hint">Regular expression</string>

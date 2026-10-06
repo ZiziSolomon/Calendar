@@ -19,6 +19,7 @@ import org.fossify.calendar.helpers.MATCH_DURATION_OVER
 import org.fossify.calendar.helpers.MATCH_EVENT_ID
 import org.fossify.calendar.helpers.MATCH_TITLE_CONTAINS
 import org.fossify.calendar.helpers.MATCH_TITLE_REGEX
+import org.fossify.calendar.helpers.RegexPortability
 import org.fossify.calendar.helpers.RegexRisk
 import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.CalendarEntity
@@ -272,12 +273,23 @@ class EditContextualRuleDialog(
             return activity.getString(R.string.contextual_rule_bad_regex, it)
         }
 
-        return when (RegexRisk.check(input)) {
-            RegexRisk.Risk.NESTED_QUANTIFIER -> activity.getString(R.string.contextual_regex_risk_nested)
-            RegexRisk.Risk.QUANTIFIED_ALTERNATION -> activity.getString(R.string.contextual_regex_risk_alternation)
-            RegexRisk.Risk.BACKREFERENCE -> activity.getString(R.string.contextual_regex_risk_backreference)
-            null -> null
+        when (RegexRisk.check(input)) {
+            RegexRisk.Risk.NESTED_QUANTIFIER -> return activity.getString(R.string.contextual_regex_risk_nested)
+            RegexRisk.Risk.QUANTIFIED_ALTERNATION -> return activity.getString(R.string.contextual_regex_risk_alternation)
+            RegexRisk.Risk.BACKREFERENCE -> return activity.getString(R.string.contextual_regex_risk_backreference)
+            null -> {}
         }
+
+        // rules are shared with the laptop app, whose regex engine reads these differently
+        val construct = when (RegexPortability.check(input)) {
+            RegexPortability.Problem.ATOMIC_GROUP -> R.string.contextual_regex_construct_atomic
+            RegexPortability.Problem.POSSESSIVE_QUANTIFIER -> R.string.contextual_regex_construct_possessive
+            RegexPortability.Problem.INLINE_FLAGS -> R.string.contextual_regex_construct_flags
+            RegexPortability.Problem.CLASS_SET_OPERATION -> R.string.contextual_regex_construct_class_set
+            RegexPortability.Problem.JAVA_ONLY_ESCAPE -> R.string.contextual_regex_construct_escape
+            null -> return null
+        }
+        return activity.getString(R.string.contextual_regex_not_portable, activity.getString(construct))
     }
 
     private fun pickCalendar() {
