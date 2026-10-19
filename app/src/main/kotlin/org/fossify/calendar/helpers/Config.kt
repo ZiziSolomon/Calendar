@@ -191,6 +191,19 @@ class Config(context: Context) : BaseConfig(context) {
         }
         set(slots) = prefs.edit().putString(CONTEXTUAL_COLOR_SLOTS, org.json.JSONObject(slots).toString()).apply()
 
+    // uuid -> when it was deleted here, for shared rules whose Google copy still has to go
+    var contextualRuleTombstones: Map<String, Long>
+        get() {
+            val json = org.json.JSONObject(prefs.getString(CONTEXTUAL_RULE_TOMBSTONES, null) ?: "{}")
+            return json.keys().asSequence().associateWith { json.getLong(it) }
+        }
+        set(tombstones) = prefs.edit().putString(CONTEXTUAL_RULE_TOMBSTONES, org.json.JSONObject(tombstones).toString()).apply()
+
+    // the Android id of the "Subtext rules" calendar last synced with; -1 = never
+    var rulesCalendarAndroidId: Long
+        get() = prefs.getLong(RULES_CALENDAR_ANDROID_ID, -1L)
+        set(id) = prefs.edit().putLong(RULES_CALENDAR_ANDROID_ID, id).apply()
+
     // off by default: muting is opt-in, so no reminder disappears just because a rule matched
     var muteContextualReminders: Boolean
         get() = prefs.getBoolean(MUTE_CONTEXTUAL_REMINDERS, false)

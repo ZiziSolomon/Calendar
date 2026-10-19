@@ -57,6 +57,13 @@ class ContextualRulesBackupTest {
     }
 
     @Test
+    fun aGoogleRuleOnACalendarThisPhoneDoesntSyncIsNotExported() {
+        // exported without a calendar, it would come back matching every calendar
+        val unbound = ContextualRule(id = 9, matchType = MATCH_ALL, calendarId = SharedRulesSync.UNBOUND_CALENDAR_ID, googleCalendarId = "fam@x")
+        assertEquals(5, roundTrip(rules + unbound).size)
+    }
+
+    @Test
     fun anOlderExportWithoutKeyFieldsStillImports() {
         val entry = ContextualRulesBackup.decode("""[{"matchType":2,"pattern":"on call","enabled":true}]""").single()
         val rule = planOnFreshInstall(listOf(entry)).toInsert.single()

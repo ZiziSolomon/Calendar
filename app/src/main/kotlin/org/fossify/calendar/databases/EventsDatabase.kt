@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 
 @Database(
     entities = [Event::class, CalendarEntity::class, Widget::class, Task::class, ContextualRule::class],
-    version = 14
+    version = 15
 )
 @TypeConverters(Converters::class)
 abstract class EventsDatabase : RoomDatabase() {
@@ -72,6 +72,7 @@ abstract class EventsDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_11_12)
                             .addMigrations(MIGRATION_12_13)
                             .addMigrations(MIGRATION_13_14)
+                            .addMigrations(MIGRATION_14_15)
                             .build()
                         db!!.openHelper.setWriteAheadLoggingEnabled(true)
                     }
@@ -224,6 +225,28 @@ abstract class EventsDatabase : RoomDatabase() {
                     execSQL(ADD_RULE_KEY_NAME_SQL)
                     execSQL(ADD_RULE_KEY_COLOR_SQL)
                 }
+            }
+        }
+
+        // Shared rules (phase 19): every existing rule gets its own random v4 uuid here, in SQL,
+        // because the sync can only tell rules apart by uuid. updated = 0 means "older than any
+        // edit", so a rule edited elsewhere always wins over an untouched local copy.
+        internal val MIGRATION_14_15_SQL = listOf(
+            "ALTER TABLE contextual_rules ADD COLUMN `uuid` TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE contextual_rules ADD COLUMN `updated` INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE contextual_rules ADD COLUMN `synced_updated` INTEGER",
+            "ALTER TABLE contextual_rules ADD COLUMN `google_calendar_id` TEXT",
+            "ALTER TABLE contextual_rules ADD COLUMN `google_event_calendar_id` TEXT",
+            "ALTER TABLE contextual_rules ADD COLUMN `google_event_id` TEXT",
+            "ALTER TABLE contextual_rules ADD COLUMN `shared_json` TEXT",
+            "UPDATE contextual_rules SET uuid = lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || " +
+                "substr(lower(hex(randomblob(2))), 2) || '-' || substr('89ab', 1 + (abs(random()) % 4), 1) || " +
+                "substr(lower(hex(randomblob(2))), 2) || '-' || lower(hex(randomblob(6))) WHERE uuid = ''",
+        )
+
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                MIGRATION_14_15_SQL.forEach { database.execSQL(it) }
             }
         }
     }

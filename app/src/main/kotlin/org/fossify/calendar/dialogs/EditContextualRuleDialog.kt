@@ -21,6 +21,8 @@ import org.fossify.calendar.helpers.MATCH_TITLE_CONTAINS
 import org.fossify.calendar.helpers.MATCH_TITLE_REGEX
 import org.fossify.calendar.helpers.RegexPortability
 import org.fossify.calendar.helpers.RegexRisk
+import org.fossify.calendar.helpers.SharedRuleCodec
+import org.fossify.calendar.helpers.SharedRulesSync
 import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.CalendarEntity
 import org.fossify.calendar.models.ContextualRule
@@ -297,7 +299,8 @@ class EditContextualRuleDialog(
         items.add(RadioItem(ALL_CALENDARS, activity.getString(R.string.contextual_rule_all_calendars)))
         calendars.forEach { items.add(RadioItem(it.id!!.toInt(), it.getDisplayTitle(), it.id!!)) }
 
-        val checked = rule.calendarId?.toInt() ?: ALL_CALENDARS
+        // a laptop rule on a calendar this phone doesn't sync: nothing here is it, so nothing is checked
+        val checked = if (rule.calendarId == SharedRulesSync.UNBOUND_CALENDAR_ID) NO_CALENDAR else rule.calendarId?.toInt() ?: ALL_CALENDARS
         RadioGroupDialog(activity, items, checked) {
             rule.calendarId = if (it == ALL_CALENDARS) null else it as Long
             showCalendar()
@@ -306,7 +309,12 @@ class EditContextualRuleDialog(
     }
 
     private fun showCalendar() {
-        val title = calendars.firstOrNull { it.id == rule.calendarId }?.getDisplayTitle()
+        val title = if (rule.calendarId == SharedRulesSync.UNBOUND_CALENDAR_ID) {
+            val hint = rule.sharedJson?.let { SharedRuleCodec.decode(it)?.calendarName } ?: rule.googleCalendarId.orEmpty()
+            activity.getString(R.string.contextual_rule_calendar_unbound, hint)
+        } else {
+            calendars.firstOrNull { it.id == rule.calendarId }?.getDisplayTitle()
+        }
         binding.contextualRuleCalendar.setText(title ?: activity.getString(R.string.contextual_rule_all_calendars))
     }
 
@@ -387,6 +395,7 @@ class EditContextualRuleDialog(
 
     companion object {
         private const val ALL_CALENDARS = -1
+        private const val NO_CALENDAR = -2
         private const val COLOR_AUTOMATIC = 0
         private const val COLOR_PICK = 1
         private const val PREVIEW_DEBOUNCE_MS = 250L

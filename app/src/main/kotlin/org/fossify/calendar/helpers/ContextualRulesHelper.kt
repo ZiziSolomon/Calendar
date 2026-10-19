@@ -3,6 +3,7 @@ package org.fossify.calendar.helpers
 import android.content.Context
 import org.fossify.calendar.R
 import org.fossify.calendar.extensions.calendarsDB
+import org.fossify.calendar.extensions.config
 import org.fossify.calendar.extensions.contextualRulesDB
 import org.fossify.calendar.extensions.eventsDB
 import org.fossify.calendar.extensions.updateWidgets
@@ -13,6 +14,8 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 /**
  * All rule writes go through here so the cached evaluator is always invalidated; a write that
  * bypassed this would leave every view showing stale contextual-ness until the app restarted.
+ * User edits are stamped (updated), keyed for Google (portable keys), remembered when deleted
+ * (tombstones), and pushed to the "Subtext rules" calendar by ContextualRulesSync.
  */
 class ContextualRulesHelper(val context: Context) {
     private val dao = context.contextualRulesDB
@@ -25,19 +28,43 @@ class ContextualRulesHelper(val context: Context) {
 
     fun saveRule(rule: ContextualRule, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
-            rule.caldavCalendarId = withCalendarKey(rule).caldavCalendarId
-            rule.id = dao.insertOrUpdate(rule)
-            rulesChanged()
+            synchronized(ContextualRulesSync.lock) {
+                rule.caldavCalendarId = withCalendarKey(rule).caldavCalendarId
+                val edited = edited(rule)
+                rule.updated = edited.updated
+                rule.googleCalendarId = edited.googleCalendarId
+                rule.googleEventCalendarId = edited.googleEventCalendarId
+                rule.googleEventId = edited.googleEventId
+                rule.id = dao.insertOrUpdate(rule)
+            }
+            rulesChanged(shared = true)
             callback?.invoke()
         }
     }
 
     fun deleteRules(rules: List<ContextualRule>, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
-            dao.deleteRules(rules)
-            rulesChanged()
+            synchronized(ContextualRulesSync.lock) {
+                delete(rules)
+            }
+            rulesChanged(shared = true)
             callback?.invoke()
         }
+    }
+
+    // a rule that had reached Google leaves a tombstone, so the next sync deletes it there too
+    private fun delete(rules: List<ContextualRule>) {
+        if (rules.isEmpty()) return
+        dao.deleteRules(rules)
+        val now = SharedRulesSync.nowMs()
+        val tombstones = rules.filter { it.syncedUpdated != null }.associate { it.uuid to now }
+        if (tombstones.isNotEmpty()) context.config.contextualRuleTombstones = context.config.contextualRuleTombstones + tombstones
+    }
+
+    // stamped now, with Google keys for whatever local calendar or event it now points at
+    private fun edited(rule: ContextualRule): ContextualRule {
+        val stamped = rule.copy(updated = SharedRulesSync.nowMs())
+        return ContextualRulesSync.withPortableKeys(context, RulesCalendarStore(context), stamped, onlyMissing = false)
     }
 
     /**
@@ -46,23 +73,27 @@ class ContextualRulesHelper(val context: Context) {
      */
     fun markEvents(eventIds: Collection<Long>, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
-            for (eventId in eventIds) {
-                val series = seriesOf(eventId) ?: continue
-                val existing = dao.getRulesForEventId(series.id!!)
-                if (existing.isEmpty()) {
-                    dao.insertOrUpdate(
-                        ContextualRule(
-                            id = null,
-                            matchType = MATCH_EVENT_ID,
-                            eventId = series.id,
-                            importId = series.importId.ifEmpty { null }
+            synchronized(ContextualRulesSync.lock) {
+                for (eventId in eventIds) {
+                    val series = seriesOf(eventId) ?: continue
+                    val existing = dao.getRulesForEventId(series.id!!)
+                    if (existing.isEmpty()) {
+                        dao.insertOrUpdate(
+                            edited(
+                                ContextualRule(
+                                    id = null,
+                                    matchType = MATCH_EVENT_ID,
+                                    eventId = series.id,
+                                    importId = series.importId.ifEmpty { null }
+                                )
+                            )
                         )
-                    )
-                } else {
-                    existing.filterNot { it.enabled }.forEach { dao.insertOrUpdate(it.copy(enabled = true)) }
+                    } else {
+                        existing.filterNot { it.enabled }.forEach { dao.insertOrUpdate(edited(it.copy(enabled = true))) }
+                    }
                 }
             }
-            rulesChanged()
+            rulesChanged(shared = true)
             callback?.invoke()
         }
     }
@@ -71,16 +102,20 @@ class ContextualRulesHelper(val context: Context) {
     fun unmarkEvent(eventId: Long, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
             val seriesId = seriesOf(eventId)?.id ?: eventId
-            dao.deleteRules(dao.getRulesForEventId(seriesId))
-            rulesChanged()
+            synchronized(ContextualRulesSync.lock) {
+                delete(dao.getRulesForEventId(seriesId))
+            }
+            rulesChanged(shared = true)
             callback?.invoke()
         }
     }
 
     fun unmarkEvents(eventIds: Collection<Long>, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
-            eventIds.map { seriesOf(it)?.id ?: it }.distinct().forEach { dao.deleteRules(dao.getRulesForEventId(it)) }
-            rulesChanged()
+            synchronized(ContextualRulesSync.lock) {
+                eventIds.map { seriesOf(it)?.id ?: it }.distinct().forEach { delete(dao.getRulesForEventId(it)) }
+            }
+            rulesChanged(shared = true)
             callback?.invoke()
         }
     }
@@ -103,6 +138,10 @@ class ContextualRulesHelper(val context: Context) {
      * Call from a background thread.
      */
     fun repairKeys() {
+        synchronized(ContextualRulesSync.lock) { repairKeysLocked() }
+    }
+
+    private fun repairKeysLocked() {
         val eventRepairs = ContextualRuleRepair.rekey(dao.getRules()) { context.eventsDB.getEventIdWithImportId(it) }
         eventRepairs.forEach { dao.insertOrUpdate(it) }
 
@@ -124,10 +163,11 @@ class ContextualRulesHelper(val context: Context) {
      * ContextualRuleCleanup). Call from a background thread.
      */
     fun forgetDeleted(eventIds: Collection<Long> = emptyList(), calendarIds: Collection<Long> = emptyList()) {
-        val orphans = ContextualRuleCleanup.orphanedBy(dao.getRules(), eventIds, calendarIds)
+        val orphans = synchronized(ContextualRulesSync.lock) {
+            ContextualRuleCleanup.orphanedBy(dao.getRules(), eventIds, calendarIds).also { delete(it) }
+        }
         if (orphans.isNotEmpty()) {
-            dao.deleteRules(orphans)
-            rulesChanged()
+            rulesChanged(shared = true)
         }
     }
 
@@ -149,9 +189,11 @@ class ContextualRulesHelper(val context: Context) {
             eventIdForImportId = { context.eventsDB.getEventIdWithImportId(it) },
         )
 
-        plan.toInsert.forEach { dao.insertOrUpdate(withCalendarKey(it)) }
+        synchronized(ContextualRulesSync.lock) {
+            plan.toInsert.forEach { dao.insertOrUpdate(edited(withCalendarKey(it))) }
+        }
         if (plan.toInsert.isNotEmpty()) {
-            rulesChanged()
+            rulesChanged(shared = true)
         }
         return plan.skipped
     }
@@ -167,9 +209,13 @@ class ContextualRulesHelper(val context: Context) {
         if (event.parentId != 0L) context.eventsDB.getEventOrTaskWithId(event.parentId) ?: event else event
     }
 
-    private fun rulesChanged() {
+    // [shared]: a user's change, which the rules calendar should get now rather than at the next sync
+    private fun rulesChanged(shared: Boolean = false) {
         ContextualRulesCache.invalidate()
         context.updateWidgets()
+        if (shared) {
+            ContextualRulesSync.syncAsync(context)
+        }
     }
 
     /**
@@ -203,7 +249,11 @@ class ContextualRulesHelper(val context: Context) {
             MATCH_DURATION_OVER -> res.getString(R.string.contextual_rule_duration_over, formatDuration(rule.pattern))
             MATCH_EVENT_ID -> {
                 val title = rule.eventId?.let { context.eventsDB.getEventWithId(it)?.title }
-                if (title == null) {
+                // a mark from the laptop on an event this phone hasn't got (yet)
+                val hint = if (rule.eventId == null && rule.googleEventId != null) rule.sharedJson?.let { SharedRuleCodec.decode(it)?.eventTitle } else null
+                if (title == null && hint != null) {
+                    res.getString(R.string.contextual_rule_event_unbound, hint)
+                } else if (title == null) {
                     res.getString(R.string.contextual_rule_event_missing)
                 } else {
                     res.getString(R.string.contextual_rule_event, title)

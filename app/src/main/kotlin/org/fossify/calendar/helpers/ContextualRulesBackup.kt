@@ -24,10 +24,17 @@ object ContextualRulesBackup {
     private val gson = Gson()
     private val entryListType = object : TypeToken<List<Entry>>() {}.type
 
-    /** Rules that can't travel (local-only event marks) are left out. */
+    /**
+     * Rules that can't travel (local-only event marks) are left out, and so are rules from Google
+     * on calendars this phone doesn't sync: with no calendar to name, they would come back
+     * matching every calendar. They're safe in the rules calendar anyway.
+     */
     fun encode(rules: List<ContextualRule>, calendarNameOf: (Long) -> String?): String {
         val entries = rules.mapNotNull { rule ->
             if (rule.matchType == MATCH_EVENT_ID && rule.importId.isNullOrEmpty()) {
+                return@mapNotNull null
+            }
+            if (rule.calendarId == SharedRulesSync.UNBOUND_CALENDAR_ID) {
                 return@mapNotNull null
             }
 

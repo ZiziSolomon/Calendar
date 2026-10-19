@@ -21,10 +21,14 @@ import org.fossify.calendar.helpers.EVENT_OCCURRENCE_TS
 import org.fossify.calendar.helpers.IS_TASK_COMPLETED
 import org.fossify.calendar.helpers.ContextualRuleUsage
 import org.fossify.calendar.helpers.ContextualRulesHelper
+import org.fossify.calendar.helpers.ContextualRulesSync
+import org.fossify.calendar.helpers.SharedRuleCodec
+import org.fossify.calendar.helpers.SharedRulesSync
 import org.fossify.calendar.helpers.SyncDiagnostics
 import org.fossify.calendar.helpers.getNowSeconds
 import org.fossify.calendar.models.ContextualRule
 import org.fossify.calendar.models.Event
+import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.getProperTextColor
@@ -71,9 +75,75 @@ class ManageContextualRulesActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.manageContextualRulesAppbar, NavigationIcon.Arrow)
+        ContextualRulesSync.lastStatus?.let { showSyncStatus(it) }
+        // pick up rules edited on the laptop, and push any made here
+        ContextualRulesSync.syncAsync(this) { status ->
+            runOnUiThread {
+                if (!isDestroyed && !isFinishing) {
+                    showSyncStatus(status)
+                    loadRules()
+                }
+            }
+        }
+    }
+
+    private fun showSyncStatus(status: ContextualRulesSync.Status) {
+        val view = binding.manageContextualRulesSyncStatus
+        val account = status.calendar?.accountName.orEmpty()
+        val lines = when (status.state) {
+            ContextualRulesSync.State.OFF, ContextualRulesSync.State.NO_PERMISSION -> listOf(getString(R.string.rules_sync_off))
+            ContextualRulesSync.State.MISSING -> listOf(getString(R.string.rules_sync_missing))
+            ContextualRulesSync.State.NOT_SYNCING -> listOf(getString(R.string.rules_sync_not_syncing, account))
+            ContextualRulesSync.State.FAILED -> listOf(getString(R.string.rules_sync_failed))
+            ContextualRulesSync.State.SYNCED -> listOfNotNull(
+                getString(R.string.rules_sync_synced, account),
+                status.localOnly.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.rules_sync_local_only, it, it) },
+                status.unreadable.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.rules_sync_unreadable, it, it) },
+            )
+        }
+        view.text = lines.joinToString("\n")
+        view.setTextColor(getProperTextColor())
+        view.beVisible()
+        if (status.state == ContextualRulesSync.State.NOT_SYNCING) {
+            view.setOnClickListener { askToEnableCalendarSync(account) }
+        } else {
+            view.setOnClickListener(null)
+            view.isClickable = false
+        }
+    }
+
+    // SYNC_EVENTS = 0: the calendar is in the account, but its events never reach this phone
+    private fun askToEnableCalendarSync(account: String) {
+        getAlertDialogBuilder()
+            .setTitle(R.string.rules_sync_turn_on_title)
+            .setMessage(getString(R.string.rules_sync_turn_on_message, account))
+            .setPositiveButton(R.string.rules_sync_turn_on) { _, _ ->
+                ensureBackgroundThread {
+                    val status = ContextualRulesSync.enableCalendarSync(this)
+                    runOnUiThread {
+                        if (isDestroyed || isFinishing) return@runOnUiThread
+                        showSyncStatus(status)
+                        loadRules()
+                        if (status.state == ContextualRulesSync.State.NOT_SYNCING) {
+                            getAlertDialogBuilder()
+                                .setMessage(getString(R.string.rules_sync_still_off, account))
+                                .setPositiveButton(org.fossify.commons.R.string.ok, null)
+                                .show()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .show()
     }
 
     private fun showEditDialog(rule: ContextualRule?) {
+        // a rule from a newer app has fields this one can't show, and Google's copy wins over edits here
+        if (rule?.sharedJson?.let { SharedRuleCodec.decode(it)?.isReadOnly } == true) {
+            toast(R.string.contextual_rule_read_only)
+            return
+        }
+
         EditContextualRuleDialog(this, rule, calendarId) {
             loadRules()
         }
@@ -87,7 +157,13 @@ class ManageContextualRulesActivity : SimpleActivity() {
             val allCalendars = getString(R.string.contextual_rule_all_calendars)
             val usage = ContextualRuleUsage.count(rules, getUsageWindowEvents())
             val rows = rules.mapIndexed { index, rule ->
-                val scope = rule.calendarId?.let { calendarTitles[it] } ?: allCalendars
+                val scope = if (rule.calendarId == SharedRulesSync.UNBOUND_CALENDAR_ID) {
+                    // from the laptop, on a calendar this phone doesn't sync: name it as Google does
+                    val hint = rule.sharedJson?.let { SharedRuleCodec.decode(it)?.calendarName } ?: rule.googleCalendarId.orEmpty()
+                    getString(R.string.contextual_rule_calendar_unbound, hint)
+                } else {
+                    rule.calendarId?.let { calendarTitles[it] } ?: allCalendars
+                }
                 ContextualRulesAdapter.Row(rule, helper.describe(rule), scope, "$scope · ${describeUsage(usage[index])}")
             }
 

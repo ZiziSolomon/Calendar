@@ -2,8 +2,11 @@ package org.fossify.calendar.databases
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.sql.DriverManager
 
 /**
  * A true migration test (MigrationTestHelper) needs a device, so this checks the cheap,
@@ -69,5 +72,70 @@ class EventsDatabaseMigrationTest {
         val v12 = createSqlByTable(12)
         val v13 = createSqlByTable(13)
         assertEquals(v12 - "contextual_rules", v13 - "contextual_rules")
+    }
+
+    @Test
+    fun migration14to15GivesTheTableRoomExpects() {
+        val expected = createSqlByTable(15)["contextual_rules"]
+        assertNotNull("contextual_rules missing from 15.json, rebuild to re-export", expected)
+        val afterAlter = createSqlByTable(14)["contextual_rules"]!!.removeSuffix(")") +
+            ", `uuid` TEXT NOT NULL DEFAULT '', `updated` INTEGER NOT NULL DEFAULT 0, `synced_updated` INTEGER" +
+            ", `google_calendar_id` TEXT, `google_event_calendar_id` TEXT, `google_event_id` TEXT, `shared_json` TEXT)"
+        assertEquals(expected, afterAlter)
+    }
+
+    @Test
+    fun version15OnlyChangesContextualRules() {
+        assertEquals(createSqlByTable(14) - "contextual_rules", createSqlByTable(15) - "contextual_rules")
+    }
+
+    // runs the real migration SQL on SQLite: existing rules survive, and each gets its own uuid
+    @Test
+    fun migration14to15KeepsEveryRuleAndGivesEachAUuid() {
+        DriverManager.getConnection("jdbc:sqlite::memory:").use { connection ->
+            val statement = connection.createStatement()
+            statement.execute(createSqlByTable(14)["contextual_rules"]!!)
+            statement.execute(
+                "INSERT INTO contextual_rules (id, calendar_id, match_type, pattern, event_id, import_id, enabled, caldav_calendar_id, key_name, key_color) VALUES " +
+                    "(1, NULL, 2, 'on call', NULL, NULL, 1, NULL, 'On call', -1739917), " +
+                    "(2, 5, 1, '', NULL, NULL, 0, 3, NULL, NULL), " +
+                    "(3, NULL, 5, '', 42, 'Caldav-3-42', 1, NULL, NULL, NULL)"
+            )
+
+            EventsDatabase.MIGRATION_14_15_SQL.forEach { statement.execute(it) }
+
+            val rows = ArrayList<Map<String, Any?>>()
+            statement.executeQuery("SELECT * FROM contextual_rules ORDER BY id").use { result ->
+                val columns = (1..result.metaData.columnCount).map { result.metaData.getColumnName(it) }
+                while (result.next()) rows.add(columns.associateWith { result.getObject(it) })
+            }
+
+            assertEquals(3, rows.size)
+            assertEquals(listOf("on call", "", ""), rows.map { it["pattern"] })
+            assertEquals(listOf(2, 1, 5), rows.map { it["match_type"] })
+            assertEquals(listOf(null, 5, null), rows.map { it["calendar_id"] })
+            assertEquals(listOf(1, 0, 1), rows.map { it["enabled"] })
+            assertEquals("On call", rows[0]["key_name"])
+            assertEquals(-1739917, rows[0]["key_color"])
+            assertEquals(3, rows[1]["caldav_calendar_id"])
+            assertEquals("Caldav-3-42", rows[2]["import_id"])
+
+            val uuids = rows.map { it["uuid"] as String }
+            val v4 = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
+            uuids.forEach { assertTrue(it, v4.matches(it)) }
+            assertEquals(3, uuids.toSet().size)
+            rows.forEach { row ->
+                assertEquals(0, row["updated"])
+                listOf("synced_updated", "google_calendar_id", "google_event_calendar_id", "google_event_id", "shared_json").forEach { assertNull(it, row[it]) }
+            }
+
+            // a rule added after the migration gets the column defaults Room declares
+            statement.execute("INSERT INTO contextual_rules (match_type, pattern, enabled) VALUES (2, 'x', 1)")
+            statement.executeQuery("SELECT uuid, updated FROM contextual_rules WHERE pattern = 'x'").use {
+                it.next()
+                assertEquals("", it.getString(1))
+                assertEquals(0L, it.getLong(2))
+            }
+        }
     }
 }

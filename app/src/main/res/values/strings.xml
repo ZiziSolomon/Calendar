@@ -355,6 +355,26 @@
     <string name="contextual_regex_construct_class_set">[…] inside […], or &amp;&amp;</string>
     <string name="contextual_regex_construct_escape">this backslash escape</string>
     <string name="sync_diagnostics_copied">Copied</string>
+    <string name="rules_sync_synced">Shared with the laptop through “Subtext rules” (%s)</string>
+    <plurals name="rules_sync_local_only">
+        <item quantity="one">%d rule stays on this phone: its calendar or event isn\'t in Google</item>
+        <item quantity="other">%d rules stay on this phone: their calendar or event isn\'t in Google</item>
+    </plurals>
+    <plurals name="rules_sync_unreadable">
+        <item quantity="one">%d event in the rules calendar can\'t be read, so it\'s left alone</item>
+        <item quantity="other">%d events in the rules calendar can\'t be read, so they\'re left alone</item>
+    </plurals>
+    <string name="rules_sync_missing">Not shared: there\'s no “Subtext rules” calendar on this phone. Create it in the laptop app, then sync this phone\'s Google account.</string>
+    <string name="rules_sync_not_syncing">Not shared: “Subtext rules” (%s) isn\'t syncing on this phone. Tap to turn it on.</string>
+    <string name="rules_sync_off">Not shared: turn on CalDAV sync in Settings to share rules with the laptop.</string>
+    <string name="rules_sync_failed">Couldn\'t sync rules with Google this time. It tries again on the next sync.</string>
+    <string name="rules_sync_turn_on_title">Sync the rules calendar?</string>
+    <string name="rules_sync_turn_on_message">Rules are shared through the “Subtext rules” calendar in %s, but this phone doesn\'t sync that calendar yet. Turn on syncing for it? Only that calendar changes.</string>
+    <string name="rules_sync_turn_on">Turn on</string>
+    <string name="rules_sync_still_off">Android didn\'t accept that, so please turn it on by hand: open the Google Calendar app → Settings → %1$s → Subtext rules → Sync. Then come back here.</string>
+    <string name="contextual_rule_calendar_unbound">%s (not synced on this phone)</string>
+    <string name="contextual_rule_event_unbound">Event: %s (not on this phone)</string>
+    <string name="contextual_rule_read_only">A newer version of Subtext made this rule. Update the app to edit it.</string>
     <string name="contextual_rule_text_hint">Text in the title</string>
     <string name="contextual_rule_regex_hint">Regular expression</string>
     <string name="contextual_rule_hours_hint">Hours (24 = one day)</string>

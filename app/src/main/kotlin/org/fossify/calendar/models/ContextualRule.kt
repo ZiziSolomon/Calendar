@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import org.fossify.calendar.helpers.MATCH_TITLE_CONTAINS
+import java.util.UUID
 
 /**
  * A rule marking matching events as "contextual" (ambient background, not a commitment).
@@ -35,5 +36,22 @@ data class ContextualRule(
     // neither; when several rules match, the most specific one with a value wins
     // (ContextualDisplay). Added in DB v14.
     @ColumnInfo(name = "key_name") var keyName: String? = null,
-    @ColumnInfo(name = "key_color") var keyColor: Int? = null
+    @ColumnInfo(name = "key_color") var keyColor: Int? = null,
+    // Shared through the "Subtext rules" Google calendar (LAPTOP_PLAN.md, phase 19). Added in DB
+    // v15. The uuid names the rule on every device; updated is the last edit (epoch ms, whole
+    // seconds), and the newest edit wins when the phone and the laptop disagree.
+    @ColumnInfo(name = "uuid", defaultValue = "''") var uuid: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "updated", defaultValue = "0") var updated: Long = 0,
+    // The `updated` Google last agreed to; null = never in Google. Tells a rule deleted in
+    // Google (synced before, gone now) from one not uploaded yet.
+    @ColumnInfo(name = "synced_updated") var syncedUpdated: Long? = null,
+    // Portable keys (decision 2): the Google calendar id for calendar-scoped rules, and the
+    // Google calendar + series event id for marks. Local ids above are bound from these on
+    // each sync; null while unknown (a phone-only calendar or event can't be shared).
+    @ColumnInfo(name = "google_calendar_id") var googleCalendarId: String? = null,
+    @ColumnInfo(name = "google_event_calendar_id") var googleEventCalendarId: String? = null,
+    @ColumnInfo(name = "google_event_id") var googleEventId: String? = null,
+    // The rule's JSON as last read from or written to Google: keeps fields from newer app
+    // versions, the format version, and the calendar/event name hints.
+    @ColumnInfo(name = "shared_json") var sharedJson: String? = null
 )

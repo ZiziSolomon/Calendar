@@ -53,6 +53,7 @@ class CalDAVHelper(val context: Context) {
 
         isUpdatingCalDAV = true
         try {
+            forgetRulesCalendar()
             val calDAVCalendars =
                 getCalDAVCalendars(context.config.caldavSyncedCalendarIds, showToasts)
             for (calendar in calDAVCalendars) {
@@ -73,6 +74,8 @@ class CalDAVHelper(val context: Context) {
 
             // re-imported events and calendars get new local ids; keep rules pointing at them
             ContextualRulesHelper(context).repairKeys()
+            // and bring the shared rules in step with the "Subtext rules" calendar
+            ContextualRulesSync.sync(context)
 
             if (scheduleNextSync) {
                 context.scheduleCalDAVSync(true)
@@ -108,6 +111,10 @@ class CalDAVHelper(val context: Context) {
 
         val selection = if (ids.trim().isNotEmpty()) "${Calendars._ID} IN ($ids)" else null
         context.queryCursor(uri, projection, selection, showErrors = showToasts) { cursor ->
+            // the shared rules calendar holds rules, not appointments: never offered, synced or shown
+            if (SharedRulesSync.isRulesCalendarName(cursor.getStringValue(Calendars.CALENDAR_DISPLAY_NAME))) {
+                return@queryCursor
+            }
             calendars.add(
                 CalDAVCalendar(
                     id = cursor.getIntValue(Calendars._ID),
@@ -122,6 +129,32 @@ class CalDAVHelper(val context: Context) {
         }
 
         return calendars
+    }
+
+    /**
+     * A "Subtext rules" calendar picked for sync before this build hid it: unpick it and drop
+     * its local copy (only the copy; the calendar and its rule events stay in Google).
+     */
+    private fun forgetRulesCalendar() {
+        val rulesCalendarIds = try {
+            RulesCalendarStore(context).rulesCalendars().map { it.id.toInt() }.toSet()
+        } catch (e: SecurityException) {
+            return
+        }
+        val synced = context.config.getSyncedCalendarIdsAsList()
+        val stale = synced.filter { it in rulesCalendarIds }
+        if (stale.isEmpty()) {
+            return
+        }
+
+        context.config.caldavSyncedCalendarIds = synced.filter { it !in rulesCalendarIds }.joinToString(",")
+        stale.forEach { caldavId ->
+            deleteCalDAVCalendarEvents(caldavId.toLong())
+            eventsHelper.getCalendarWithCalDAVCalendarId(caldavId)?.id?.let {
+                context.config.removeDisplayCalendars(hashSetOf(it.toString()))
+            }
+        }
+        context.calendarsDB.deleteCalendarsWithCalendarIds(stale)
     }
 
     fun updateCalDAVCalendar(calendar: CalendarEntity) {
